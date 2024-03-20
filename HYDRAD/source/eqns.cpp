@@ -1123,7 +1123,7 @@ int j;
 
 			// CALCULATE NLTE HI FRACTION
     	   	pRadiativeRates->GetBoundBoundRates( fBB_lu, fBB_ul, &(flog10_Trad[0]) );
-        	pRadiativeRates->GetBoundFreeRates( fBF, &(flog10_Trad[6]) );
+        	    pRadiativeRates->GetBoundFreeRates( fBF, &(flog10_Trad[6]) );
        		pRadiativeRates->GetFreeBoundRates( fFB, &(flog10_Trad[6]), log10(CellProperties.T[ELECTRON]), CellProperties.n[ELECTRON] );
 			pRadiativeRates->GetCollisionalRatesRH( fColl_ex_lu, fColl_ex_ul, fColl_ion, fColl_rec, log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON] );
 
@@ -1501,6 +1501,8 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
 		avg_energy = ( ( 1.0 - delta )/( 2.0 - delta ) ) * cutoff_energy;
 		log_avg_energy = log(avg_energy);
 		fLambda2 = 25.1 + log_avg_energy;
+        
+    double dEbyds;
 
 #ifdef OPTICALLY_THICK_RADIATION
 #ifdef NLTE_CHROMOSPHERE
@@ -2133,6 +2135,25 @@ int j;
 		fColumnDensitystar += ( ( (fLambda1*(1.0-CellProperties.HI)) + (fLambda2*CellProperties.HI) ) / fLambda1 ) * CellProperties.n[HYDROGEN] * CellProperties.cell_width;
 		CellProperties.nH_c = fColumnDensity;
 		CellProperties.nH_star_c = fColumnDensitystar;
+        
+        for( j=0; j<100; ++j )
+        {
+            if( pActiveCell == pCentreOfCurrentRow )
+            {
+                CellProperties.nt_energy[j] = float(j) + cutoff_energy;
+            }
+            else
+            {
+                pRightCell = pActiveCell->pGetPointer( RIGHT );
+                pRightCell->GetCellProperties( &RightCellProperties );
+
+                // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
+                dEbyds = (-3.344446481925492e-37) * (CellProperties.n[ELECTRON]/RightCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
+                CellProperties.nt_energy[j] = RightCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
+            }
+        }
+        printf("s %.2e\tE_0 %.2e\n", CellProperties.s[0]/1e8, CellProperties.nt_energy[0]*6.242e8);
+        
 #endif // BEAM_HEATING
 
 	    pActiveCell->UpdateCellProperties( &CellProperties );
