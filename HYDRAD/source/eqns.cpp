@@ -1502,7 +1502,7 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
 		log_avg_energy = log(avg_energy);
 		fLambda2 = 25.1 + log_avg_energy;
         
-    double dEbyds, x_RC_left, x_RC_right;
+    double dEbyds, x_RC_left, x_RC_right, v_nt;
     x_RC_left = -1.0;
     x_RC_right = -1.0;
 
@@ -2145,7 +2145,7 @@ int j;
             if( pActiveCell == pCentreOfCurrentRow )
             {
                 // How to define the energy range?  Gauss-Laguerre quadrature might be able to be used for integral
-                CellProperties.nt_energy[j] = float(j) + cutoff_energy;
+                CellProperties.nt_energy[j] = 1.602e-9*(float(j) + cutoff_energy/1.602e-9);
             }
             else
             {
@@ -2154,7 +2154,19 @@ int j;
 
                 if( RightCellProperties.nt_energy[j] > RightCellProperties.E_thermal )
                 {
-    
+                    // Calculate the speed of the non-thermal electron (using relativistic kinetic energy)
+                    // 8.18710578e-07 erg = m_e c^2 = 510.99895 keV
+                    v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / pow(1.0+RightCellProperties.nt_energy[j]/8.18710578e-07, 2.0) );
+                    
+                     // Calculate the e-e Coulomb logarithm:
+                    // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
+                    fLambda1 = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
+                    
+                    // Calculate the e-H Coulomb logarithm:
+                    // - 37.81375318409218 = m_e / 1.105 * chi 
+                    // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
+                    fLambda2 = 2.0 * log(v_nt) - 37.81375318409218;
+                    
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
                     dEbyds = (-3.344446481925492e-37) * (CellProperties.n[ELECTRON]/RightCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
                     CellProperties.nt_energy[j] = RightCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
@@ -2176,7 +2188,7 @@ int j;
         } 
 
         printf("s %.4e\tE_0 %.4e\n", CellProperties.s[0]/1e8, CellProperties.nt_energy[0]*6.242e8);
-        
+
 #endif // BEAM_HEATING
 
 	    pActiveCell->UpdateCellProperties( &CellProperties );
@@ -2230,7 +2242,7 @@ int j;
         {
             if( pActiveCell == pCentreOfCurrentRow )
             {
-                CellProperties.nt_energy[j] = float(j) + cutoff_energy;
+                CellProperties.nt_energy[j] = 1.602e-9*(float(j) + cutoff_energy/1.602e-9);
             }
             else
             {
@@ -2239,6 +2251,13 @@ int j;
 
                 if( LeftCellProperties.nt_energy[j] > LeftCellProperties.E_thermal )
                 {
+                    // Calculate the speed of the non-thermal electron (using relativistic kinetic energy)
+                    // 8.18710578e-07 erg = m_e c^2 = 510.99895 keV
+                    v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / (pow(1.0+LeftCellProperties.nt_energy[j]/8.18710578e-07, 2.0) ) );
+                    
+                    // Calculate the e-e Coulomb logarithm:
+                    // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
+                    fLambda1 = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
     
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
                     dEbyds = (-3.344446481925492e-37) * (CellProperties.n[ELECTRON]/LeftCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));

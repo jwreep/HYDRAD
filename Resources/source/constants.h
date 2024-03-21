@@ -15,7 +15,7 @@
 #define SQRT_PI                                 1.7724538509055160272981674833411
 #define GAMMA					1.666666667                         // Adiabatic index
 #define GAMMA_MINUS_ONE				0.666666667
-#define SPEED_OF_LIGHT                          3e10                                // (cm)(s^-1)
+#define SPEED_OF_LIGHT                          2.99792458e10                                // (cm)(s^-1)
 
 #define SPITZER_ELECTRON_CONDUCTIVITY  		7.8e-7                              // (erg) (cm^-1) (s^-1) (K^-7/2)
 #define SPITZER_ION_CONDUCTIVITY		3.2e-8                              // (erg) (cm^-1) (s^-1) (K^-7/2)
