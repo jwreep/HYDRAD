@@ -2136,6 +2136,8 @@ int j;
 		CellProperties.nH_c = fColumnDensity;
 		CellProperties.nH_star_c = fColumnDensitystar;
         
+        // Should E_thermal use T_e or T_H?
+        CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
         for( j=0; j<100; ++j )
         {
             if( pActiveCell == pCentreOfCurrentRow )
@@ -2147,12 +2149,23 @@ int j;
                 pRightCell = pActiveCell->pGetPointer( RIGHT );
                 pRightCell->GetCellProperties( &RightCellProperties );
 
-                // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
-                dEbyds = (-3.344446481925492e-37) * (CellProperties.n[ELECTRON]/RightCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
-                CellProperties.nt_energy[j] = RightCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
+                if( RightCellProperties.nt_energy[j] > RightCellProperties.E_thermal )
+                {
+    
+                    // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
+                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[ELECTRON]/RightCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
+                    CellProperties.nt_energy[j] = RightCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
+                    
+                    // Safety check on energy to make sure it's never negative:
+                    if( CellProperties.nt_energy[j] <= 0.0 ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                }
+                else
+                {   
+                    CellProperties.nt_energy[j] = CellProperties.E_thermal;
+                }
             }
         }
-        printf("s %.2e\tE_0 %.2e\n", CellProperties.s[0]/1e8, CellProperties.nt_energy[0]*6.242e8);
+        printf("s %.4e\tE_0 %.4e\n", CellProperties.s[0]/1e8, CellProperties.nt_energy[0]*6.242e8);
         
 #endif // BEAM_HEATING
 
@@ -2200,6 +2213,36 @@ int j;
 		fColumnDensitystar += ( ( (fLambda1*(1.0-CellProperties.HI)) + (fLambda2*CellProperties.HI) ) / fLambda1 ) * CellProperties.n[HYDROGEN] * CellProperties.cell_width;
 		CellProperties.nH_c = fColumnDensity;
 		CellProperties.nH_star_c = fColumnDensitystar;
+        
+        // Should E_thermal use T_e or T_H?
+        CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
+        for( j=0; j<100; ++j )
+        {
+            if( pActiveCell == pCentreOfCurrentRow )
+            {
+                CellProperties.nt_energy[j] = float(j) + cutoff_energy;
+            }
+            else
+            {
+                pLeftCell = pActiveCell->pGetPointer( LEFT );
+                pLeftCell->GetCellProperties( &LeftCellProperties );
+
+                if( LeftCellProperties.nt_energy[j] > LeftCellProperties.E_thermal )
+                {
+    
+                    // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
+                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[ELECTRON]/LeftCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
+                    CellProperties.nt_energy[j] = LeftCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
+                    
+                    // Safety check on energy to make sure it's never negative:
+                    if( CellProperties.nt_energy[j] <= 0.0 ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                }
+                else
+                {   
+                    CellProperties.nt_energy[j] = CellProperties.E_thermal;
+                }
+            }
+        }
 #endif // BEAM_HEATING
 
     	pActiveCell->UpdateCellProperties( &CellProperties );
