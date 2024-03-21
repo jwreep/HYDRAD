@@ -1502,7 +1502,9 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
 		log_avg_energy = log(avg_energy);
 		fLambda2 = 25.1 + log_avg_energy;
         
-    double dEbyds;
+    double dEbyds, x_RC_left, x_RC_right;
+    x_RC_left = -1.0;
+    x_RC_right = -1.0;
 
 #ifdef OPTICALLY_THICK_RADIATION
 #ifdef NLTE_CHROMOSPHERE
@@ -2142,6 +2144,7 @@ int j;
         {
             if( pActiveCell == pCentreOfCurrentRow )
             {
+                // How to define the energy range?  Gauss-Laguerre quadrature might be able to be used for integral
                 CellProperties.nt_energy[j] = float(j) + cutoff_energy;
             }
             else
@@ -2157,7 +2160,7 @@ int j;
                     CellProperties.nt_energy[j] = RightCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
                     
                     // Safety check on energy to make sure it's never negative:
-                    if( CellProperties.nt_energy[j] <= 0.0 ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                    if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
                 }
                 else
                 {   
@@ -2165,6 +2168,13 @@ int j;
                 }
             }
         }
+        // Store the thermalization height of the beam, x_RC (along the left leg of the loop) when we reach it
+        if( (x_RC_left < 0.0) && (CellProperties.nt_energy[0] <= CellProperties.E_thermal) )
+        {
+            x_RC_left = CellProperties.s[0];
+            printf("x_RC_L = %.4e\n", x_RC_left);
+        } 
+
         printf("s %.4e\tE_0 %.4e\n", CellProperties.s[0]/1e8, CellProperties.nt_energy[0]*6.242e8);
         
 #endif // BEAM_HEATING
@@ -2235,13 +2245,18 @@ int j;
                     CellProperties.nt_energy[j] = LeftCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
                     
                     // Safety check on energy to make sure it's never negative:
-                    if( CellProperties.nt_energy[j] <= 0.0 ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                    if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
                 }
                 else
                 {   
                     CellProperties.nt_energy[j] = CellProperties.E_thermal;
                 }
             }
+        }
+        // Store the thermalization height of the beam, x_RC (along the right leg of the loop) when we reach it
+        if( (x_RC_right < 0.0) && (CellProperties.nt_energy[0] <= CellProperties.E_thermal) )
+        {
+            x_RC_right = CellProperties.s[0];
         }
 #endif // BEAM_HEATING
 

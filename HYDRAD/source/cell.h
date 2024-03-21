@@ -70,7 +70,7 @@ struct AdaptiveMeshCellProperties {
 	#ifdef BEAM_HEATING
 	    // The hydrogen and modified hydrogen column densities
 	    double nH_c, nH_star_c;
-        double nt_energy[100], E_thermal;
+        double nt_energy[100], E_thermal, heat_integral;
 	#endif // BEAM_HEATING
 	#ifdef NLTE_CHROMOSPHERE
 	    double rho_e, Trad[10], Hstate[6], Del_Hstate_dot_v[6];
@@ -79,7 +79,7 @@ struct AdaptiveMeshCellProperties {
 	#ifdef BEAM_HEATING
 	    // The neutral hydrogen population fraction, and the hydrogen and modified hydrogen column densities
 	    double HI, nH_c, nH_star_c;
-        double nt_energy[100], E_thermal;
+        double nt_energy[100], E_thermal, heat_integral;
 	#endif // BEAM_HEATING
 #endif // OPTICALLY_THICK_RADIATION
 
