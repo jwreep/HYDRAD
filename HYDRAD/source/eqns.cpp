@@ -2140,7 +2140,9 @@ int j;
         
         // Should E_thermal use T_e or T_H?
         CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
-        for( j=0; j<100; ++j )
+        CellProperties.E_min = cutoff_energy;
+        CellProperties.Fex = BeamParams[0];
+        for( j = 0; j < 100; ++j )
         {
             if( pActiveCell == pCentreOfCurrentRow )
             {
@@ -2169,6 +2171,7 @@ int j;
                     
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
                     dEbyds = (-3.344446481925492e-37) * (CellProperties.n[ELECTRON]/RightCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
+                    
                     CellProperties.nt_energy[j] = RightCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
                     
                     // Safety check on energy to make sure it's never negative:
@@ -2186,8 +2189,23 @@ int j;
             x_RC_left = CellProperties.s[0];
             printf("x_RC_L = %.4e\n", x_RC_left);
         } 
+        
+        // At heights below x_RC, calculate the new E_min and reduction in beam flux
+        if( (x_RC_left > 0.0) && (CellProperties.s[0] <= x_RC_left) )
+        {
+            for( j = 0; j < 100; ++j )
+            {
+                if( CellProperties.nt_energy[j] > CellProperties.E_thermal )
+                {
+                    CellProperties.E_min = 1.602e-9*(float(j) + cutoff_energy/1.602e-9);
+                    break;
+                }
+            }
+            CellProperties.Fex *= pow(CellProperties.E_min/cutoff_energy, 1.0 - delta);
+        }
 
-        printf("s %.4e\tE_0 %.4e\n", CellProperties.s[0]/1e8, CellProperties.nt_energy[0]*6.242e8);
+        printf("s %.4e\tE_0 %.4e\tEmin %.4e\tFex %.4e\n", CellProperties.s[0]/1e8, CellProperties.nt_energy[0]*6.242e8, 
+                    CellProperties.E_min*6.242e8, CellProperties.Fex);
 
 #endif // BEAM_HEATING
 
@@ -2238,6 +2256,8 @@ int j;
         
         // Should E_thermal use T_e or T_H?
         CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
+        CellProperties.E_min = cutoff_energy;
+        CellProperties.Fex = BeamParams[0];
         for( j=0; j<100; ++j )
         {
             if( pActiveCell == pCentreOfCurrentRow )
@@ -2261,6 +2281,7 @@ int j;
     
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
                     dEbyds = (-3.344446481925492e-37) * (CellProperties.n[ELECTRON]/LeftCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
+                    
                     CellProperties.nt_energy[j] = LeftCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
                     
                     // Safety check on energy to make sure it's never negative:
@@ -2277,6 +2298,21 @@ int j;
         {
             x_RC_right = CellProperties.s[0];
         }
+        
+        // At heights above x_RC, calculate the new E_min and reduction in beam flux
+        if( (x_RC_right > 0.0) && (CellProperties.s[0] >= x_RC_right) )
+        {
+            for( j = 0; j < 100; ++j )
+            {
+                if( CellProperties.nt_energy[j] > CellProperties.E_thermal )
+                {
+                    CellProperties.E_min = 1.602e-9*(float(j) + cutoff_energy/1.602e-9);
+                    break;
+                }
+            }
+            CellProperties.Fex *= pow(CellProperties.E_min/cutoff_energy, 1.0 - delta);
+        }
+
 #endif // BEAM_HEATING
 
     	pActiveCell->UpdateCellProperties( &CellProperties );
