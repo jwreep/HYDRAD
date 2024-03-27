@@ -2142,7 +2142,8 @@ int j;
         CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
         CellProperties.E_min = cutoff_energy;
         CellProperties.F_ex = BeamParams[0];
-        for( j = 0; j < 1000; ++j )
+        CellProperties.dFebyds = 0.0;
+        for( j = 0; j < 200; ++j )
         {
             if( pActiveCell == pCentreOfCurrentRow )
             {
@@ -2187,25 +2188,43 @@ int j;
         if( (x_RC_left < 0.0) && (CellProperties.nt_energy[0] <= CellProperties.E_thermal) )
         {
             x_RC_left = CellProperties.s[0];
-            printf("x_RC_L = %.4e\n", x_RC_left);
+//            printf("x_RC_L = %.4e\n", x_RC_left);
         } 
         
         // At heights below x_RC, calculate the new E_min and reduction in beam flux
-        if( (x_RC_left > 0.0) && (CellProperties.s[0] <= x_RC_left) )
+        //if( (x_RC_left > 0.0) && (CellProperties.s[0] <= x_RC_left) )
+        //{
+        if( CellProperties.nt_energy[199] > CellProperties.E_thermal )
         {
-            for( j = 0; j < 1000; ++j )
+            for( j = 0; j < 200; ++j )
             {
                 if( CellProperties.nt_energy[j] > CellProperties.E_thermal )
                 {
-                    CellProperties.E_min = 1.602e-9*(float(j)*0.1 + cutoff_energy/1.602e-9);
+                    //CellProperties.E_min = 1.602e-9*(float(j)*0.5 + cutoff_energy/1.602e-9);
+                    CellProperties.E_min = CellProperties.nt_energy[j];
                     break;
                 }
             }
-            CellProperties.F_ex *= pow(CellProperties.E_min/cutoff_energy, 1.0 - delta);
+            //CellProperties.F_ex *= pow(CellProperties.E_min/cutoff_energy, 1.0 - delta);
+            CellProperties.F_ex *= pow(cutoff_energy / CellProperties.E_min, 1.0 - delta);
+            
+            pRightCell = pActiveCell->pGetPointer( RIGHT );
+            pRightCell->GetCellProperties( &RightCellProperties );
+
+            // Should we interpolate or calculate this derivative at the grid cell interface??
+            // Probably more accurate, but let's save for later
+            CellProperties.dFebyds = (CellProperties.F_ex - RightCellProperties.F_ex)/(CellProperties.s[0] - RightCellProperties.s[0]);
         }
 
-        printf("s %.4e\tE_0 %.4e\tEmin %.4e\tFex %.4e\n", CellProperties.s[0]/1e8, CellProperties.nt_energy[0]*6.242e8, 
-                    CellProperties.E_min*6.242e8, CellProperties.F_ex);
+//        printf("s %.4e\tE_0 %.4e\tEmin %.4e\tFex %.4e\tdFds %.4e\n", CellProperties.s[0]/1e8, CellProperties.nt_energy[0]*6.242e8, 
+//                    CellProperties.E_min*6.242e8, CellProperties.F_ex, CellProperties.dFebyds);
+
+        CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
+        #ifdef OPTICALLY_THICK_RADIATION
+            #ifdef NLTE_CHROMOSPHERE
+                pHeat->SetQbeam( CellProperties.s[1], CellProperties.TE_KE_term[4][ELECTRON] );
+            #endif // NLTE_CHROMOSPHERE
+        #endif // OPTICALLY_THICK_RADIATION
 
 #endif // BEAM_HEATING
 
@@ -2258,7 +2277,8 @@ int j;
         CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
         CellProperties.E_min = cutoff_energy;
         CellProperties.F_ex = BeamParams[0];
-        for( j=0; j<1000; ++j )
+        CellProperties.dFebyds = 0.0;
+        for( j=0; j<200; ++j )
         {
             if( pActiveCell == pCentreOfCurrentRow )
             {
@@ -2300,18 +2320,36 @@ int j;
         }
         
         // At heights above x_RC, calculate the new E_min and reduction in beam flux
-        if( (x_RC_right > 0.0) && (CellProperties.s[0] >= x_RC_right) )
+        //if( (x_RC_right > 0.0) && (CellProperties.s[0] >= x_RC_right) )
+        //{
+        if( CellProperties.nt_energy[199] > CellProperties.E_thermal )
         {
-            for( j = 0; j < 1000; ++j )
+            for( j = 0; j < 200; ++j )
             {
                 if( CellProperties.nt_energy[j] > CellProperties.E_thermal )
                 {
-                    CellProperties.E_min = 1.602e-9*(float(j)*0.1 + cutoff_energy/1.602e-9);
+                    //CellProperties.E_min = 1.602e-9*(float(j)*0.5 + cutoff_energy/1.602e-9);
+                    CellProperties.E_min = CellProperties.nt_energy[j];
                     break;
                 }
             }
-            CellProperties.F_ex *= pow(CellProperties.E_min/cutoff_energy, 1.0 - delta);
+            //CellProperties.F_ex *= pow(CellProperties.E_min/cutoff_energy, 1.0 - delta);
+            CellProperties.F_ex *= pow(cutoff_energy / CellProperties.E_min, 1.0 - delta);
+            
+            pLeftCell = pActiveCell->pGetPointer( LEFT );
+            pLeftCell->GetCellProperties( &LeftCellProperties );
+
+            // Should we interpolate or calculate this derivative at the grid cell interface??
+            // Probably more accurate, but let's save for later
+            CellProperties.dFebyds = (CellProperties.F_ex - LeftCellProperties.F_ex)/(CellProperties.s[0] - LeftCellProperties.s[0]);
         }
+
+        CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
+        #ifdef OPTICALLY_THICK_RADIATION
+            #ifdef NLTE_CHROMOSPHERE
+                pHeat->SetQbeam( CellProperties.s[1], CellProperties.TE_KE_term[4][ELECTRON] );
+            #endif // NLTE_CHROMOSPHERE
+        #endif // OPTICALLY_THICK_RADIATION
 
 #endif // BEAM_HEATING
 
@@ -2331,6 +2369,7 @@ int j;
 // *****************************************************************************
 // *    BEAM HEATING								       					   *
 // *****************************************************************************
+/*
 #ifdef BEAM_HEATING
 	pNextActiveCell = pStartOfCurrentRow->pGetPointer( RIGHT )->pGetPointer( RIGHT );
 	while( pNextActiveCell->pGetPointer( RIGHT )->pGetPointer( RIGHT ) )
@@ -2350,6 +2389,7 @@ int j;
 	    pNextActiveCell = pActiveCell->pGetPointer( RIGHT );
 	}
 #endif // BEAM_HEATING
+*/
 
 // *****************************************************************************
 // *    TERMS OF THE CONSERVATION EQUATIONS                                    *
