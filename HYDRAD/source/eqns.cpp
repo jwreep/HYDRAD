@@ -1503,6 +1503,7 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
 		fLambda2 = 25.1 + log_avg_energy;
         
     double dEbyds, x_RC_left, x_RC_right, v_nt;
+    double E_nt0, F_ex0;
     x_RC_left = -1.0;
     x_RC_right = -1.0;
 
@@ -2141,14 +2142,42 @@ int j;
         // Should E_thermal use T_e or T_H?
         CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
         CellProperties.E_min = cutoff_energy;
-        CellProperties.F_ex = BeamParams[0];
         CellProperties.dFebyds = 0.0;
-        for( j = 0; j < 200; ++j )
+        for( j = 0; j < N_NT_ENERGY; ++j )
         {
             if( pActiveCell == pCentreOfCurrentRow )
             {
                 // How to define the energy range?  Gauss-Laguerre quadrature might be able to be used for integral
                 CellProperties.nt_energy[j] = 1.602e-9*(float(j)*0.1 + cutoff_energy/1.602e-9);
+                CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(cutoff_energy/1.602e-9, delta-1.0)*pow(cutoff_energy/1.602e-9 + 0.1, 1.0-delta));
+                
+                E_nt0 = CellProperties.nt_energy[j];
+                F_ex0 = CellProperties.F_ex[j];
+                
+                // Calculate the speed of the non-thermal electron (using relativistic kinetic energy)
+                // 8.18710578e-07 erg = m_e c^2 = 510.99895 keV
+                v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / pow(1.0+RightCellProperties.nt_energy[j]/8.18710578e-07, 2.0) );
+                    
+                // Calculate the e-e Coulomb logarithm:
+                // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
+                fLambda1 = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
+                    
+                // Calculate the e-H Coulomb logarithm:
+                // - 37.81375318409218 = m_e / 1.105 * chi 
+                // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
+                fLambda2 = 2.0 * log(v_nt) - 37.81375318409218;
+                    
+                // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
+                dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
+
+                // Only use half the apex cell's width since both electrons are injected in both directions here
+                CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width/2.0);
+                
+                // Safety check on energy to make sure it's never negative:
+                if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                
+                CellProperties.F_ex[j] *= pow(E_nt0 / CellProperties.nt_energy[j], 1.0 - delta);
+                CellProperties.dFebyds += (CellProperties.F_ex[j] - F_ex0)/(CellProperties.cell_width/2.0);
             }
             else
             {
@@ -2171,16 +2200,20 @@ int j;
                     fLambda2 = 2.0 * log(v_nt) - 37.81375318409218;
                     
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
-                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[ELECTRON]/RightCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
+                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/RightCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
                     
                     CellProperties.nt_energy[j] = RightCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
                     
                     // Safety check on energy to make sure it's never negative:
                     if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                
+                    CellProperties.F_ex[j] = RightCellProperties.F_ex[j] * pow(RightCellProperties.nt_energy[j] / CellProperties.nt_energy[j], 1.0 - delta);
+                    CellProperties.dFebyds += (CellProperties.F_ex[j] - RightCellProperties.F_ex[j])/(CellProperties.s[0] - RightCellProperties.s[0]);
                 }
                 else
                 {   
                     CellProperties.nt_energy[j] = CellProperties.E_thermal;
+                    CellProperties.F_ex[j] = 0.0;
                 }
             }
         }
@@ -2190,34 +2223,12 @@ int j;
             x_RC_left = CellProperties.s[0];
 //            printf("x_RC_L = %.4e\n", x_RC_left);
         } 
-        
-        // At heights below x_RC, calculate the new E_min and reduction in beam flux
-        //if( (x_RC_left > 0.0) && (CellProperties.s[0] <= x_RC_left) )
-        //{
-        if( CellProperties.nt_energy[199] > CellProperties.E_thermal )
-        {
-            for( j = 0; j < 200; ++j )
-            {
-                if( CellProperties.nt_energy[j] > CellProperties.E_thermal )
-                {
-                    //CellProperties.E_min = 1.602e-9*(float(j)*0.5 + cutoff_energy/1.602e-9);
-                    CellProperties.E_min = CellProperties.nt_energy[j];
-                    break;
-                }
-            }
-            //CellProperties.F_ex *= pow(CellProperties.E_min/cutoff_energy, 1.0 - delta);
-            CellProperties.F_ex *= pow(cutoff_energy / CellProperties.E_min, 1.0 - delta);
-            
-            pRightCell = pActiveCell->pGetPointer( RIGHT );
-            pRightCell->GetCellProperties( &RightCellProperties );
 
-            // Should we interpolate or calculate this derivative at the grid cell interface??
-            // Probably more accurate, but let's save for later
-            CellProperties.dFebyds = (CellProperties.F_ex - RightCellProperties.F_ex)/(CellProperties.s[0] - RightCellProperties.s[0]);
-        }
-
-//        printf("s %.4e\tE_0 %.4e\tEmin %.4e\tFex %.4e\tdFds %.4e\n", CellProperties.s[0]/1e8, CellProperties.nt_energy[0]*6.242e8, 
-//                    CellProperties.E_min*6.242e8, CellProperties.F_ex, CellProperties.dFebyds);
+        //printf("s %.4e\tE_0 %.4e\tEmin %.4e\tFex %.4e\tdFds %.4e\n", 
+        //           CellProperties.s[0]/1e8, CellProperties.nt_energy[0]*6.242e8, 
+        //            CellProperties.E_min*6.242e8, CellProperties.F_ex[0], CellProperties.dFebyds);
+                    
+        //CellProperties.dFebyds = 0.0;
 
         CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
         #ifdef OPTICALLY_THICK_RADIATION
@@ -2276,13 +2287,41 @@ int j;
         // Should E_thermal use T_e or T_H?
         CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
         CellProperties.E_min = cutoff_energy;
-        CellProperties.F_ex = BeamParams[0];
         CellProperties.dFebyds = 0.0;
-        for( j=0; j<200; ++j )
+        for( j=0; j<N_NT_ENERGY; ++j )
         {
             if( pActiveCell == pCentreOfCurrentRow )
             {
                 CellProperties.nt_energy[j] = 1.602e-9*(float(j)*0.1 + cutoff_energy/1.602e-9);
+                CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(cutoff_energy/1.602e-9, delta-1.0)*pow(cutoff_energy/1.602e-9 + 0.1, 1.0-delta));
+                
+                E_nt0 = CellProperties.nt_energy[j];
+                F_ex0 = CellProperties.F_ex[j];
+                
+                // Calculate the speed of the non-thermal electron (using relativistic kinetic energy)
+                // 8.18710578e-07 erg = m_e c^2 = 510.99895 keV
+                v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / pow(1.0+RightCellProperties.nt_energy[j]/8.18710578e-07, 2.0) );
+                    
+                // Calculate the e-e Coulomb logarithm:
+                // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
+                fLambda1 = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
+                    
+                // Calculate the e-H Coulomb logarithm:
+                // - 37.81375318409218 = m_e / 1.105 * chi 
+                // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
+                fLambda2 = 2.0 * log(v_nt) - 37.81375318409218;
+                    
+                // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
+                dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
+
+                // Only use half the apex cell's width since both electrons are injected in both directions here
+                CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width/2.0);
+                
+                // Safety check on energy to make sure it's never negative:
+                if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                
+                CellProperties.F_ex[j] *= pow(E_nt0 / CellProperties.nt_energy[j], 1.0 - delta);
+                CellProperties.dFebyds += (CellProperties.F_ex[j] - F_ex0)/(CellProperties.cell_width/2.0);
             }
             else
             {
@@ -2300,16 +2339,20 @@ int j;
                     fLambda1 = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
     
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
-                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[ELECTRON]/LeftCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
+                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/LeftCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
                     
                     CellProperties.nt_energy[j] = LeftCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
                     
                     // Safety check on energy to make sure it's never negative:
                     if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                
+                    CellProperties.F_ex[j] = LeftCellProperties.F_ex[j] * pow(LeftCellProperties.nt_energy[j] / CellProperties.nt_energy[j], 1.0 - delta);
+                    CellProperties.dFebyds += (CellProperties.F_ex[j] - LeftCellProperties.F_ex[j])/(CellProperties.s[0] - LeftCellProperties.s[0]);
                 }
                 else
                 {   
                     CellProperties.nt_energy[j] = CellProperties.E_thermal;
+                    CellProperties.F_ex[j] = 0.0;
                 }
             }
         }
@@ -2319,31 +2362,6 @@ int j;
             x_RC_right = CellProperties.s[0];
         }
         
-        // At heights above x_RC, calculate the new E_min and reduction in beam flux
-        //if( (x_RC_right > 0.0) && (CellProperties.s[0] >= x_RC_right) )
-        //{
-        if( CellProperties.nt_energy[199] > CellProperties.E_thermal )
-        {
-            for( j = 0; j < 200; ++j )
-            {
-                if( CellProperties.nt_energy[j] > CellProperties.E_thermal )
-                {
-                    //CellProperties.E_min = 1.602e-9*(float(j)*0.5 + cutoff_energy/1.602e-9);
-                    CellProperties.E_min = CellProperties.nt_energy[j];
-                    break;
-                }
-            }
-            //CellProperties.F_ex *= pow(CellProperties.E_min/cutoff_energy, 1.0 - delta);
-            CellProperties.F_ex *= pow(cutoff_energy / CellProperties.E_min, 1.0 - delta);
-            
-            pLeftCell = pActiveCell->pGetPointer( LEFT );
-            pLeftCell->GetCellProperties( &LeftCellProperties );
-
-            // Should we interpolate or calculate this derivative at the grid cell interface??
-            // Probably more accurate, but let's save for later
-            CellProperties.dFebyds = (CellProperties.F_ex - LeftCellProperties.F_ex)/(CellProperties.s[0] - LeftCellProperties.s[0]);
-        }
-
         CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
         #ifdef OPTICALLY_THICK_RADIATION
             #ifdef NLTE_CHROMOSPHERE
