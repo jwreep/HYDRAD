@@ -1504,6 +1504,9 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
         
     double dEbyds, x_RC_left, x_RC_right, v_nt;
     double E_nt0, F_ex0;
+    
+    // Step size in energy space for the beam calculation, setting the maximum energy to encompass 99% of the beam energy
+    double deltaE_nt = cutoff_energy * (pow(100, 1.0/delta) - 1.0) / N_NT_ENERGY;  
     x_RC_left = -1.0;
     x_RC_right = -1.0;
 
@@ -2147,16 +2150,15 @@ int j;
         {
             if( pActiveCell == pCentreOfCurrentRow )
             {
-                // How to define the energy range?  Gauss-Laguerre quadrature might be able to be used for integral
-                CellProperties.nt_energy[j] = 1.602e-9*(float(j)*0.1 + cutoff_energy/1.602e-9);
-                CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(cutoff_energy/1.602e-9, delta-1.0)*pow(cutoff_energy/1.602e-9 + 0.1, 1.0-delta));
-                
+                CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
+                CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(1.0 + deltaE_nt/cutoff_energy, 1.0-delta) );
+                                
                 E_nt0 = CellProperties.nt_energy[j];
                 F_ex0 = CellProperties.F_ex[j];
                 
                 // Calculate the speed of the non-thermal electron (using relativistic kinetic energy)
                 // 8.18710578e-07 erg = m_e c^2 = 510.99895 keV
-                v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / pow(1.0+RightCellProperties.nt_energy[j]/8.18710578e-07, 2.0) );
+                v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / pow(1.0+CellProperties.nt_energy[j]/8.18710578e-07, 2.0) );
                     
                 // Calculate the e-e Coulomb logarithm:
                 // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
@@ -2170,14 +2172,13 @@ int j;
                 // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
                 dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
 
-                // Only use half the apex cell's width since both electrons are injected in both directions here
-                CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width/2.0);
+                CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width);
                 
                 // Safety check on energy to make sure it's never negative:
                 if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
                 
                 CellProperties.F_ex[j] *= pow(E_nt0 / CellProperties.nt_energy[j], 1.0 - delta);
-                CellProperties.dFebyds += (CellProperties.F_ex[j] - F_ex0)/(CellProperties.cell_width/2.0);
+                CellProperties.dFebyds += (CellProperties.F_ex[j] - F_ex0)/(CellProperties.cell_width);
             }
             else
             {
@@ -2292,15 +2293,15 @@ int j;
         {
             if( pActiveCell == pCentreOfCurrentRow )
             {
-                CellProperties.nt_energy[j] = 1.602e-9*(float(j)*0.1 + cutoff_energy/1.602e-9);
-                CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(cutoff_energy/1.602e-9, delta-1.0)*pow(cutoff_energy/1.602e-9 + 0.1, 1.0-delta));
-                
+                CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
+                CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(1.0 + deltaE_nt/cutoff_energy, 1.0-delta) );
+
                 E_nt0 = CellProperties.nt_energy[j];
                 F_ex0 = CellProperties.F_ex[j];
                 
                 // Calculate the speed of the non-thermal electron (using relativistic kinetic energy)
                 // 8.18710578e-07 erg = m_e c^2 = 510.99895 keV
-                v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / pow(1.0+RightCellProperties.nt_energy[j]/8.18710578e-07, 2.0) );
+                v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / pow(1.0+CellProperties.nt_energy[j]/8.18710578e-07, 2.0) );
                     
                 // Calculate the e-e Coulomb logarithm:
                 // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
@@ -2314,14 +2315,13 @@ int j;
                 // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
                 dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
 
-                // Only use half the apex cell's width since both electrons are injected in both directions here
-                CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width/2.0);
+                CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width);
                 
                 // Safety check on energy to make sure it's never negative:
                 if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
                 
                 CellProperties.F_ex[j] *= pow(E_nt0 / CellProperties.nt_energy[j], 1.0 - delta);
-                CellProperties.dFebyds += (CellProperties.F_ex[j] - F_ex0)/(CellProperties.cell_width/2.0);
+                CellProperties.dFebyds += (CellProperties.F_ex[j] - F_ex0)/(CellProperties.cell_width);
             }
             else
             {
