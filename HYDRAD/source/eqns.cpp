@@ -2146,6 +2146,22 @@ int j;
         CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
         CellProperties.E_min = cutoff_energy;
         CellProperties.dFebyds = 0.0;
+        CellProperties.F_RC = 0.0;
+        CellProperties.sum_F_ex = 0.0;
+        
+        if( pActiveCell == pCentreOfCurrentRow )
+        {
+            // Calculate the total force from the return current in the injection cell:
+            for( j = 0; j < N_NT_ENERGY; ++j )
+            {
+                CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(1.0 + deltaE_nt/cutoff_energy, 1.0-delta) );
+                
+                // Calculate the force from the return current, = q_e E_RC
+                // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
+                CellProperties.F_RC += (4.633457864432091e-27) * CellProperties.F_ex[j] * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
+            }
+        }
+        
         for( j = 0; j < N_NT_ENERGY; ++j )
         {
             if( pActiveCell == pCentreOfCurrentRow )
@@ -2168,9 +2184,14 @@ int j;
                 // - 37.81375318409218 = m_e / 1.105 * chi 
                 // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
                 fLambda2 = 2.0 * log(v_nt) - 37.81375318409218;
-                    
+                
                 // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
                 dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
+                dEbyds -= CellProperties.F_RC;
+                
+                // Calculate the Spitzer resistivity
+                // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
+                CellProperties.eta_S = 2.0083453260595434e-08 * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
 
                 CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width);
                 
@@ -2178,7 +2199,8 @@ int j;
                 if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
                 
                 CellProperties.F_ex[j] *= pow(E_nt0 / CellProperties.nt_energy[j], 1.0 - delta);
-                CellProperties.dFebyds += (CellProperties.F_ex[j] - F_ex0)/(CellProperties.cell_width);
+                CellProperties.dFebyds += (F_ex0 - CellProperties.F_ex[j])/(CellProperties.cell_width);
+                CellProperties.sum_F_ex += CellProperties.F_ex[j];
             }
             else
             {
@@ -2199,17 +2221,35 @@ int j;
                     // - 37.81375318409218 = m_e / 1.105 * chi 
                     // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
                     fLambda2 = 2.0 * log(v_nt) - 37.81375318409218;
+
+                    // Calculate the Spitzer resistivity
+                    // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
+                    CellProperties.eta_S = 2.0083453260595434e-08 * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
+                    
+                    // Calculate the force from the return current, = q_e E_RC
+                    // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
+                    //CellProperties.F_RC = (4.633457864432091e-27) * RightCellProperties.sum_F_ex * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
+                    CellProperties.F_RC = pow(ELECTRON_CHARGE, 2.0) * CellProperties.eta_S * RightCellProperties.sum_F_ex;
                     
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
                     dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/RightCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
+                    dEbyds -= CellProperties.F_RC;
                     
                     CellProperties.nt_energy[j] = RightCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
                     
                     // Safety check on energy to make sure it's never negative:
-                    if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                    if( CellProperties.nt_energy[j] <= CellProperties.E_thermal )
+                    { 
+                        CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                        CellProperties.F_ex[j] = 0.0;
+                    }
+                    else
+                    {
+                        CellProperties.F_ex[j] = RightCellProperties.F_ex[j] * pow(RightCellProperties.nt_energy[j] / CellProperties.nt_energy[j], 1.0 - delta);
+                    }
                 
-                    CellProperties.F_ex[j] = RightCellProperties.F_ex[j] * pow(RightCellProperties.nt_energy[j] / CellProperties.nt_energy[j], 1.0 - delta);
                     CellProperties.dFebyds += (CellProperties.F_ex[j] - RightCellProperties.F_ex[j])/(CellProperties.s[0] - RightCellProperties.s[0]);
+                    CellProperties.sum_F_ex += CellProperties.F_ex[j];
                 }
                 else
                 {   
@@ -2225,13 +2265,14 @@ int j;
 //            printf("x_RC_L = %.4e\n", x_RC_left);
         } 
 
-        //printf("s %.4e\tE_0 %.4e\tEmin %.4e\tFex %.4e\tdFds %.4e\n", 
-        //           CellProperties.s[0]/1e8, CellProperties.nt_energy[0]*6.242e8, 
-        //            CellProperties.E_min*6.242e8, CellProperties.F_ex[0], CellProperties.dFebyds);
+        //printf("s %.4e\tE_0 %.4e\tQ_s %.4e\teta_S %.4e\tdEbyds %.4e\tF_RC %.4e\n", 
+        //          CellProperties.s[0]/1e8, CellProperties.nt_energy[0]*6.242e8, 
+        //            pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S, CellProperties.eta_S, dEbyds, CellProperties.F_RC);
                     
         //CellProperties.dFebyds = 0.0;
 
         CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
+        if( CellProperties.eta_S > 0.0 ) CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
         #ifdef OPTICALLY_THICK_RADIATION
             #ifdef NLTE_CHROMOSPHERE
                 pHeat->SetQbeam( CellProperties.s[1], CellProperties.TE_KE_term[4][ELECTRON] );
@@ -2311,17 +2352,21 @@ int j;
                 // - 37.81375318409218 = m_e / 1.105 * chi 
                 // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
                 fLambda2 = 2.0 * log(v_nt) - 37.81375318409218;
+                
+                // Calculate the force from the return current, = q_e E_RC
+                // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
+                //F_RC = (4.633457864432091e-27) * CellProperties.F_ex[j] * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
                     
                 // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
                 dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
-
+                
                 CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width);
                 
                 // Safety check on energy to make sure it's never negative:
                 if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
                 
                 CellProperties.F_ex[j] *= pow(E_nt0 / CellProperties.nt_energy[j], 1.0 - delta);
-                CellProperties.dFebyds += (CellProperties.F_ex[j] - F_ex0)/(CellProperties.cell_width);
+                CellProperties.dFebyds += (F_ex0 - CellProperties.F_ex[j])/(CellProperties.cell_width);
             }
             else
             {
@@ -2338,15 +2383,31 @@ int j;
                     // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
                     fLambda1 = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
     
+                    // Calculate the e-H Coulomb logarithm:
+                    // - 37.81375318409218 = m_e / 1.105 * chi 
+                    // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
+                    fLambda2 = 2.0 * log(v_nt) - 37.81375318409218;
+                
+                    // Calculate the force from the return current, = q_e E_RC
+                    // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
+                    //F_RC = (4.633457864432091e-27) * LeftCellProperties.F_ex[j] * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
+
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
                     dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/LeftCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
                     
                     CellProperties.nt_energy[j] = LeftCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
                     
                     // Safety check on energy to make sure it's never negative:
-                    if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                    if( CellProperties.nt_energy[j] <= CellProperties.E_thermal )
+                    { 
+                        CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                        CellProperties.F_ex[j] = 0.0;
+                    }
+                    else
+                    {
+                        CellProperties.F_ex[j] = LeftCellProperties.F_ex[j] * pow(LeftCellProperties.nt_energy[j] / CellProperties.nt_energy[j], 1.0 - delta);
+                    }
                 
-                    CellProperties.F_ex[j] = LeftCellProperties.F_ex[j] * pow(LeftCellProperties.nt_energy[j] / CellProperties.nt_energy[j], 1.0 - delta);
                     CellProperties.dFebyds += (CellProperties.F_ex[j] - LeftCellProperties.F_ex[j])/(CellProperties.s[0] - LeftCellProperties.s[0]);
                 }
                 else

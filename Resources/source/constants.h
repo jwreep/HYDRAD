@@ -35,7 +35,7 @@
 #define AVERAGE_PARTICLE_MASS  			2.171e-24                           // (g)
 #define SQRT_AVERAGE_PARTICLE_MASS		1.473e-12                           // (g^0.5)
 
-#define ELECTRON_CHARGE				4.80e-10                            // (esu)
+#define ELECTRON_CHARGE				4.80320425e-10                      // (esu)
 #define ELECTRON_CHARGE_POWER_4			5.308416e-38                        // (esu^4)
 
 #define SOLAR_SURFACE_GRAVITY 			27400                               // (cm) (s^-2)
