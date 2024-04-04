@@ -1506,7 +1506,8 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
     double E_nt0, F_ex0;
     
     // Step size in energy space for the beam calculation, setting the maximum energy to encompass 99% of the beam energy
-    double deltaE_nt = cutoff_energy * (pow(100, 1.0/delta) - 1.0) / N_NT_ENERGY;  
+    //double deltaE_nt = cutoff_energy * (pow(100, 1.0/delta) - 1.0) / N_NT_ENERGY;  
+    double deltaE_nt = cutoff_energy * pow(100.0, (1.0/(delta-1.0))) / N_NT_ENERGY;
     x_RC_left = -1.0;
     x_RC_right = -1.0;
 
@@ -2154,12 +2155,15 @@ int j;
             // Calculate the total force from the return current in the injection cell:
             for( j = 0; j < N_NT_ENERGY; ++j )
             {
-                CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(1.0 + deltaE_nt/cutoff_energy, 1.0-delta) );
+                CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
+                //CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(1.0 + deltaE_nt/cutoff_energy, 1.0-delta) );
+                CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
                 
                 // Calculate the force from the return current, = q_e E_RC
                 // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
                 CellProperties.F_RC += (4.633457864432091e-27) * CellProperties.F_ex[j] * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
             }
+            CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
         }
         
         for( j = 0; j < N_NT_ENERGY; ++j )
@@ -2167,8 +2171,9 @@ int j;
             if( pActiveCell == pCentreOfCurrentRow )
             {
                 CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
-                CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(1.0 + deltaE_nt/cutoff_energy, 1.0-delta) );
-                                
+                //CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(1.0 + deltaE_nt/cutoff_energy, 1.0-delta) );
+                CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
+                
                 E_nt0 = CellProperties.nt_energy[j];
                 F_ex0 = CellProperties.F_ex[j];
                 
@@ -2187,7 +2192,7 @@ int j;
                 
                 // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
                 dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
-                dEbyds -= CellProperties.F_RC;
+                //dEbyds -= CellProperties.F_RC;
                 
                 // Calculate the Spitzer resistivity
                 // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
@@ -2230,10 +2235,11 @@ int j;
                     // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
                     //CellProperties.F_RC = (4.633457864432091e-27) * RightCellProperties.sum_F_ex * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
                     CellProperties.F_RC = pow(ELECTRON_CHARGE, 2.0) * CellProperties.eta_S * RightCellProperties.sum_F_ex;
+                    CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
                     
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
                     dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/RightCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
-                    dEbyds -= CellProperties.F_RC;
+                    //dEbyds -= CellProperties.F_RC;
                     
                     CellProperties.nt_energy[j] = RightCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
                     
@@ -2247,7 +2253,7 @@ int j;
                     {
                         CellProperties.F_ex[j] = RightCellProperties.F_ex[j] * pow(RightCellProperties.nt_energy[j] / CellProperties.nt_energy[j], 1.0 - delta);
                     }
-                
+                 
                     CellProperties.dFebyds += (CellProperties.F_ex[j] - RightCellProperties.F_ex[j])/(CellProperties.s[0] - RightCellProperties.s[0]);
                     CellProperties.sum_F_ex += CellProperties.F_ex[j];
                 }
@@ -2262,17 +2268,21 @@ int j;
         if( (x_RC_left < 0.0) && (CellProperties.nt_energy[0] <= CellProperties.E_thermal) )
         {
             x_RC_left = CellProperties.s[0];
-//            printf("x_RC_L = %.4e\n", x_RC_left);
+        //    printf("x_RC_L = %.4e\n", x_RC_left);
         } 
 
-        //printf("s %.4e\tE_0 %.4e\tQ_s %.4e\teta_S %.4e\tdEbyds %.4e\tF_RC %.4e\n", 
-        //          CellProperties.s[0]/1e8, CellProperties.nt_energy[0]*6.242e8, 
-        //            pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S, CellProperties.eta_S, dEbyds, CellProperties.F_RC);
+        printf("s %.4e\tsFe %.4e\tQ_s %.4e\teta_S %.4e\tdEbyds %.4e\tF_RC %.4e\n", 
+                 CellProperties.s[0]/1e8, CellProperties.sum_F_ex, 
+                    pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S, CellProperties.eta_S, dEbyds, CellProperties.F_RC);
                     
         //CellProperties.dFebyds = 0.0;
 
         CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
-        if( CellProperties.eta_S > 0.0 ) CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
+        if( CellProperties.eta_S > 0.0 )
+        {
+            CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
+        //    printf("s %.4e\tH_H %.4e\n", CellProperties.s[0]/1e8, CellProperties.TE_KE_term[4][HYDROGEN]);
+        }
         #ifdef OPTICALLY_THICK_RADIATION
             #ifdef NLTE_CHROMOSPHERE
                 pHeat->SetQbeam( CellProperties.s[1], CellProperties.TE_KE_term[4][ELECTRON] );
@@ -2718,18 +2728,18 @@ int j;
 
 #ifdef BEAM_HEATING
 	// The beam heating function is called in the section above where the cell-centered terms are calculated
+    if( CellProperties.TE_KE_term[4][HYDROGEN] <= 0.0 ) CellProperties.TE_KE_term[4][HYDROGEN] = SMALLEST_DOUBLE;
 #if defined (ELECTRON_HEATING_ONLY) || defined(HYDROGEN_HEATING_ONLY)
 	#ifdef ELECTRON_HEATING_ONLY
     	CellProperties.TE_KE_term[4][ELECTRON] += pHeat->CalculateHeating( CellProperties.s[1], current_time );
-    	CellProperties.TE_KE_term[4][HYDROGEN] = SMALLEST_DOUBLE;
-	#endif // ELECTRON_HEATING_ONLY
+    	#endif // ELECTRON_HEATING_ONLY
 	#ifdef HYDROGEN_HEATING_ONLY
-    	CellProperties.TE_KE_term[4][HYDROGEN] = pHeat->CalculateHeating( CellProperties.s[1], current_time );
+    	CellProperties.TE_KE_term[4][HYDROGEN] += pHeat->CalculateHeating( CellProperties.s[1], current_time );
 	#endif // HYDROGTEN_HEATING_ONLY
 #else // ELECTRON_HEATING_ONLY || HYDROGEN_HEATING_ONLY
 	term1 = pHeat->CalculateHeating( CellProperties.s[1], current_time );
    	CellProperties.TE_KE_term[4][ELECTRON] += ELECTRON_HEATING * term1;
-	CellProperties.TE_KE_term[4][HYDROGEN] = HYDROGEN_HEATING * term1;
+	CellProperties.TE_KE_term[4][HYDROGEN] += HYDROGEN_HEATING * term1;
 #endif // // ELECTRON_HEATING_ONLY || HYDROGEN_HEATING_ONLY
 #else // BEAM_HEATING
 #if defined (ELECTRON_HEATING_ONLY) || defined(HYDROGEN_HEATING_ONLY)
