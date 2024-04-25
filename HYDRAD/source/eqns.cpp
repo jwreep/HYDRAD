@@ -1504,6 +1504,7 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
         
     double dEbyds, x_RC_left, x_RC_right, v_nt;
     double E_nt0, F_ex0;
+    double fLambda_ee, fLambda_eH;
     
     // Step size in energy space for the beam calculation, setting the maximum energy to encompass 99% of the beam energy
     //double deltaE_nt = cutoff_energy * (pow(100, 1.0/delta) - 1.0) / N_NT_ENERGY;  
@@ -2183,16 +2184,16 @@ int j;
                     
                 // Calculate the e-e Coulomb logarithm:
                 // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
-                fLambda1 = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
+                fLambda_ee = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
                     
                 // Calculate the e-H Coulomb logarithm:
                 // - 37.81375318409218 = m_e / 1.105 * chi 
                 // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
-                fLambda2 = 2.0 * log(v_nt) - 37.81375318409218;
+                fLambda_eH = 2.0 * log(v_nt) - 37.81375318409218;
                 
                 // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
-                dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
-                //dEbyds -= CellProperties.F_RC;
+                dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
+                dEbyds -= CellProperties.F_RC;
                 
                 // Calculate the Spitzer resistivity
                 // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
@@ -2220,12 +2221,12 @@ int j;
                     
                      // Calculate the e-e Coulomb logarithm:
                     // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
-                    fLambda1 = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
+                    fLambda_ee = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
                     
                     // Calculate the e-H Coulomb logarithm:
                     // - 37.81375318409218 = m_e / 1.105 * chi 
                     // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
-                    fLambda2 = 2.0 * log(v_nt) - 37.81375318409218;
+                    fLambda_eH = 2.0 * log(v_nt) - 37.81375318409218;
 
                     // Calculate the Spitzer resistivity
                     // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
@@ -2238,8 +2239,8 @@ int j;
                     CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
                     
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
-                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/RightCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
-                    //dEbyds -= CellProperties.F_RC;
+                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/RightCellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
+                    dEbyds -= CellProperties.F_RC;
                     
                     CellProperties.nt_energy[j] = RightCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
                     
@@ -2280,8 +2281,7 @@ int j;
         CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
         if( CellProperties.eta_S > 0.0 )
         {
-            //CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
-        //    printf("s %.4e\tH_H %.4e\n", CellProperties.s[0]/1e8, CellProperties.TE_KE_term[4][HYDROGEN]);
+            CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
         }
         #ifdef OPTICALLY_THICK_RADIATION
             #ifdef NLTE_CHROMOSPHERE
@@ -2343,6 +2343,22 @@ int j;
         CellProperties.F_RC = 0.0;
         CellProperties.sum_F_ex = 0.0;
 
+        if( pActiveCell == pCentreOfCurrentRow )
+        {
+            // Calculate the total force from the return current in the injection cell:
+            for( j = 0; j < N_NT_ENERGY; ++j )
+            {
+                CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
+                //CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(1.0 + deltaE_nt/cutoff_energy, 1.0-delta) );
+                CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
+                
+                // Calculate the force from the return current, = q_e E_RC
+                // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
+                CellProperties.F_RC += (4.633457864432091e-27) * CellProperties.F_ex[j] * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
+            }
+            CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
+        }
+
         for( j=0; j<N_NT_ENERGY; ++j )
         {
             if( pActiveCell == pCentreOfCurrentRow )
@@ -2360,26 +2376,16 @@ int j;
                     
                 // Calculate the e-e Coulomb logarithm:
                 // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
-                fLambda1 = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
+                fLambda_ee = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
                     
                 // Calculate the e-H Coulomb logarithm:
                 // - 37.81375318409218 = m_e / 1.105 * chi 
                 // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
-                fLambda2 = 2.0 * log(v_nt) - 37.81375318409218;
-                
-                // Calculate the Spitzer resistivity
-                // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
-                CellProperties.eta_S = 2.0083453260595434e-08 * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
-                    
-                // Calculate the force from the return current, = q_e E_RC
-                // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
-                //CellProperties.F_RC = (4.633457864432091e-27) * RightCellProperties.sum_F_ex * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
-                CellProperties.F_RC = pow(ELECTRON_CHARGE, 2.0) * CellProperties.eta_S * RightCellProperties.sum_F_ex;
-                CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
-                    
+                fLambda_eH = 2.0 * log(v_nt) - 37.81375318409218;
+                                    
                 // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
-                dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
-                 //dEbyds -= CellProperties.F_RC;
+                dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
+                dEbyds -= CellProperties.F_RC;
                
                 CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width);
                 
@@ -2403,20 +2409,26 @@ int j;
                     
                     // Calculate the e-e Coulomb logarithm:
                     // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
-                    fLambda1 = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
+                    fLambda_ee = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
     
                     // Calculate the e-H Coulomb logarithm:
                     // - 37.81375318409218 = m_e / 1.105 * chi 
                     // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
-                    fLambda2 = 2.0 * log(v_nt) - 37.81375318409218;
+                    fLambda_eH = 2.0 * log(v_nt) - 37.81375318409218;
                 
+                    // Calculate the Spitzer resistivity
+                    // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
+                    CellProperties.eta_S = 2.0083453260595434e-08 * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
+
                     // Calculate the force from the return current, = q_e E_RC
                     // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
                     //F_RC = (4.633457864432091e-27) * LeftCellProperties.F_ex[j] * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
+                    CellProperties.F_RC = pow(ELECTRON_CHARGE, 2.0) * CellProperties.eta_S * LeftCellProperties.sum_F_ex;
+                    CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
 
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
-                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/LeftCellProperties.nt_energy[j]) * (fLambda1*(1.0-CellProperties.HI) + (fLambda2*CellProperties.HI));
-                    //dEbyds -= CellProperties.F_RC;
+                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/LeftCellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
+                    dEbyds -= CellProperties.F_RC;
                    
                     CellProperties.nt_energy[j] = LeftCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
                     
@@ -2448,6 +2460,10 @@ int j;
         }
         
         CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
+        if( CellProperties.eta_S > 0.0 )
+        {
+            CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
+        }
         #ifdef OPTICALLY_THICK_RADIATION
             #ifdef NLTE_CHROMOSPHERE
                 pHeat->SetQbeam( CellProperties.s[1], CellProperties.TE_KE_term[4][ELECTRON] );
