@@ -2157,7 +2157,6 @@ int j;
             for( j = 0; j < N_NT_ENERGY; ++j )
             {
                 CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
-                //CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(1.0 + deltaE_nt/cutoff_energy, 1.0-delta) );
                 CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
                 
                 // Calculate the force from the return current, = q_e E_RC
@@ -2172,7 +2171,6 @@ int j;
             if( pActiveCell == pCentreOfCurrentRow )
             {
                 CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
-                //CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(1.0 + deltaE_nt/cutoff_energy, 1.0-delta) );
                 CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
                 
                 E_nt0 = CellProperties.nt_energy[j];
@@ -2234,8 +2232,8 @@ int j;
                     
                     // Calculate the force from the return current, = q_e E_RC
                     // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
-                    //CellProperties.F_RC = (4.633457864432091e-27) * RightCellProperties.sum_F_ex * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
                     CellProperties.F_RC = pow(ELECTRON_CHARGE, 2.0) * CellProperties.eta_S * RightCellProperties.sum_F_ex;
+                    // Conversion from energy flux to number flux:
                     CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
                     
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
@@ -2269,14 +2267,7 @@ int j;
         if( (x_RC_left < 0.0) && (CellProperties.nt_energy[0] <= CellProperties.E_thermal) )
         {
             x_RC_left = CellProperties.s[0];
-        //    printf("x_RC_L = %.4e\n", x_RC_left);
         } 
-
-        //printf("s %.4e\tsFe %.4e\tQ_s %.4e\teta_S %.4e\tdEbyds %.4e\tF_RC %.4e\n", 
-        //        CellProperties.s[0]/1e8, CellProperties.sum_F_ex, 
-        //        pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S, CellProperties.eta_S, dEbyds, CellProperties.F_RC);
-                    
-        //CellProperties.dFebyds = 0.0;
 
         CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
         if( CellProperties.eta_S > 0.0 )
@@ -2349,7 +2340,6 @@ int j;
             for( j = 0; j < N_NT_ENERGY; ++j )
             {
                 CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
-                //CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(1.0 + deltaE_nt/cutoff_energy, 1.0-delta) );
                 CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
                 
                 // Calculate the force from the return current, = q_e E_RC
@@ -2364,7 +2354,6 @@ int j;
             if( pActiveCell == pCentreOfCurrentRow )
             {
                 CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
-                //CellProperties.F_ex[j] = BeamParams[0] * (1.0 - pow(1.0 + deltaE_nt/cutoff_energy, 1.0-delta) );
                 CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
 
                 E_nt0 = CellProperties.nt_energy[j];
@@ -2422,8 +2411,8 @@ int j;
 
                     // Calculate the force from the return current, = q_e E_RC
                     // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
-                    //F_RC = (4.633457864432091e-27) * LeftCellProperties.F_ex[j] * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
                     CellProperties.F_RC = pow(ELECTRON_CHARGE, 2.0) * CellProperties.eta_S * LeftCellProperties.sum_F_ex;
+                    // Conversion from energy flux to number flux:
                     CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
 
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
