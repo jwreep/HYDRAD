@@ -2148,8 +2148,10 @@ int j;
         CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
         CellProperties.E_min = cutoff_energy;
         CellProperties.dFebyds = 0.0;
-        CellProperties.F_RC = 0.0;
         CellProperties.sum_F_ex = 0.0;
+        #ifdef RETURN_CURRENT
+        CellProperties.F_RC = 0.0;
+        #endif // RETURN_CURRENT
         
         if( pActiveCell == pCentreOfCurrentRow )
         {
@@ -2159,11 +2161,15 @@ int j;
                 CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
                 CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
                 
+                #ifdef RETURN_CURRENT
                 // Calculate the force from the return current, = q_e E_RC
                 // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
                 CellProperties.F_RC += (4.633457864432091e-27) * CellProperties.F_ex[j] * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
+                #endif // RETURN_CURRENT
             }
+            #ifdef RETURN_CURRENT
             CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
+            #endif // RETURN_CURRENT
         }
         
         for( j = 0; j < N_NT_ENERGY; ++j )
@@ -2191,11 +2197,14 @@ int j;
                 
                 // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
                 dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
-                dEbyds -= CellProperties.F_RC;
                 
+                #ifdef RETURN_CURRENT
+                dEbyds -= CellProperties.F_RC;
+
                 // Calculate the Spitzer resistivity
                 // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
                 CellProperties.eta_S = 2.0083453260595434e-08 * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
+                #endif // RETURN_CURRENT
 
                 CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width);
                 
@@ -2225,20 +2234,22 @@ int j;
                     // - 37.81375318409218 = m_e / 1.105 * chi 
                     // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
                     fLambda_eH = 2.0 * log(v_nt) - 37.81375318409218;
+                    
+                    // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
+                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/RightCellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
 
+                    #ifdef RETURN_CURRENT
                     // Calculate the Spitzer resistivity
                     // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
                     CellProperties.eta_S = 2.0083453260595434e-08 * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
-                    
+
                     // Calculate the force from the return current, = q_e E_RC
                     // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
                     CellProperties.F_RC = pow(ELECTRON_CHARGE, 2.0) * CellProperties.eta_S * RightCellProperties.sum_F_ex;
                     // Conversion from energy flux to number flux:
                     CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
-                    
-                    // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
-                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/RightCellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
                     dEbyds -= CellProperties.F_RC;
+                    #endif // RETURN_CURRENT
                     
                     CellProperties.nt_energy[j] = RightCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
                     
@@ -2270,10 +2281,14 @@ int j;
         } 
 
         CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
+        
+        #ifdef RETURN_CURRENT
         if( CellProperties.eta_S > 0.0 )
         {
             CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
         }
+        #endif // RETURN_CURRENT
+        
         #ifdef OPTICALLY_THICK_RADIATION
             #ifdef NLTE_CHROMOSPHERE
                 pHeat->SetQbeam( CellProperties.s[1], CellProperties.TE_KE_term[4][ELECTRON] );
@@ -2331,8 +2346,10 @@ int j;
         CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
         CellProperties.E_min = cutoff_energy;
         CellProperties.dFebyds = 0.0;
-        CellProperties.F_RC = 0.0;
         CellProperties.sum_F_ex = 0.0;
+        #ifdef RETURN_CURRENT
+        CellProperties.F_RC = 0.0;        
+        #endif // RETURN_CURRENT
 
         if( pActiveCell == pCentreOfCurrentRow )
         {
@@ -2342,11 +2359,15 @@ int j;
                 CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
                 CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
                 
+                #ifdef RETURN_CURRENT
                 // Calculate the force from the return current, = q_e E_RC
                 // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
                 CellProperties.F_RC += (4.633457864432091e-27) * CellProperties.F_ex[j] * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
+                #endif // RETURN_CURRENT
             }
+            #ifdef RETURN_CURRENT
             CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
+            #endif // RETURN_CURRENT
         }
 
         for( j=0; j<N_NT_ENERGY; ++j )
@@ -2374,7 +2395,10 @@ int j;
                                     
                 // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
                 dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
+                
+                #ifdef RETURN_CURRENT
                 dEbyds -= CellProperties.F_RC;
+                #endif // RETURN_CURRENT
                
                 CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width);
                 
@@ -2404,7 +2428,11 @@ int j;
                     // - 37.81375318409218 = m_e / 1.105 * chi 
                     // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
                     fLambda_eH = 2.0 * log(v_nt) - 37.81375318409218;
-                
+
+                    // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
+                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/LeftCellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
+                    
+                    #ifdef RETURN_CURRENT
                     // Calculate the Spitzer resistivity
                     // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
                     CellProperties.eta_S = 2.0083453260595434e-08 * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
@@ -2414,10 +2442,8 @@ int j;
                     CellProperties.F_RC = pow(ELECTRON_CHARGE, 2.0) * CellProperties.eta_S * LeftCellProperties.sum_F_ex;
                     // Conversion from energy flux to number flux:
                     CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
-
-                    // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
-                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/LeftCellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
                     dEbyds -= CellProperties.F_RC;
+                    #endif // RETURN_CURRENT
                    
                     CellProperties.nt_energy[j] = LeftCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
                     
@@ -2449,10 +2475,14 @@ int j;
         }
         
         CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
+        
+        #ifdef RETURN_CURRENT
         if( CellProperties.eta_S > 0.0 )
         {
             CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
         }
+        #endif // RETURN_CURRENT
+        
         #ifdef OPTICALLY_THICK_RADIATION
             #ifdef NLTE_CHROMOSPHERE
                 pHeat->SetQbeam( CellProperties.s[1], CellProperties.TE_KE_term[4][ELECTRON] );
