@@ -123,6 +123,11 @@ class CEquations {
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
 
+#ifdef ALFVEN_WAVE_HEATING
+    void UpdateRayPosition( int pulse_index, int ray_index, double time_step, PCELL pCurrentCell );
+    void CalculateInterpolatedHeating( int pulse_index, int ray_index, double Poynting_flux, PCELL pCurrentCell );
+#endif // ALFVEN_WAVE_HEATING
+
     // Function for evaluating the terms of the equations
     void EvaluateTerms( double current_time, double *delta_t, int iFirstStep );
 

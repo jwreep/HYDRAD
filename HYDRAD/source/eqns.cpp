@@ -25,6 +25,11 @@
 	#include <omp.h>
 #endif // OPENMP
 
+#ifdef ALFVEN_WAVE_HEATING
+#include <vector>
+#include <algorithm>
+#endif // ALFVEN_WAVE_HEATING
+
 // Electron - ion Coulomb logarithm
 // Implement the formulae (b) on page 34 of the NRL Plasma Formulary (2016)
 double getLogLambda_ei( double fTe, double fne, double fTi, double fni, double fmi, int iZ )
@@ -187,6 +192,10 @@ int iTemp;
 	pRadiativeRates = new CRadiativeRates( (char *)"Radiation_Model/atomic_data/OpticallyThick/radiative_rates/rates_files.txt" );
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef ALFVEN_WAVE_HEATING
+    pHeat->SetNextOutputTime( Params.OutputPeriod );
+#endif // ALFVEN_WAVE_HEATING
 }
 
 void CEquations::FreeAll( void )
@@ -1518,6 +1527,25 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
 	double tau_IR;
 #endif // BEAM_HEATING
 
+#ifdef ALFVEN_WAVE_HEATING
+    double ray_position;    // The current ray's position
+    int p, r;
+    
+    std::vector<double> minimum_position, maximum_position;  // The minimum and maximum position of the rays in a wave pulse
+    std::vector<std::vector <double> > ray_position_vector, poynting_flux_vector;
+    std::vector<double> row;
+    
+    std::vector<double>::iterator closest_lower, closest_higher;  // The closest rays lower and higher than the grid cell center
+    int index_lower, index_higher;
+    double interpolated_poynting_flux;
+    std::vector<double> reverse_position_vector, reverse_poynting_vector;
+    
+    FILE *pRayFile;
+    char szRayFilename[256];
+    
+#endif //ALFVEN_WAVE_HEATING
+
+
 #ifdef USE_KINETIC_MODEL
 	CalculateKineticModel( iFirstStep );
 #endif // USE_KINETIC_MODEL
@@ -2217,6 +2245,180 @@ int j;
 	}
 #endif // BEAM_HEATING
 
+#ifdef ALFVEN_WAVE_HEATING
+    // Check to see if a new ray needs to be initialized at this time step
+    if( current_time > pHeat->GetNewRayTime() )
+        pHeat->SetNewRayTime( current_time );
+    
+    // Loop over all the wave pulses and all the rays in each wave pulse,
+    // update the positions and fluxes, and store those values to use in heating functions
+    for( p=0; p<pHeat->GetNumberOfPulses(); p++ )
+    {   // Loop over the pulses
+        
+        ray_position_vector.push_back(row);
+        poynting_flux_vector.push_back(row);
+        
+        minimum_position.push_back( 1.e100 );
+        maximum_position.push_back( 0. );
+        
+        if( pHeat->IsPulseInitialized(p) )
+        {   // Only perform actions on pulses that have already been initialized
+            
+            for( r=0; r<pHeat->GetNumRaysInPulse(p); r++ )
+            {   // Loop over the rays in a pulse
+                
+                ray_position = pHeat->GetRayPosition( p, r );
+                
+                pNextActiveCell = pStartOfCurrentRow->pGetPointer( RIGHT )->pGetPointer( RIGHT );
+                
+                while( pNextActiveCell->pGetPointer( RIGHT )->pGetPointer( RIGHT )  )
+                {   // Loop across the grid to determine which grid cell a ray is in
+                    // -- ray positions are stored in a Lagrangian grid for accuracy
+                    pActiveCell = pNextActiveCell;
+                    pActiveCell->GetCellProperties( &CellProperties );
+                    
+                    if( (ray_position > CellProperties.s[0] && ray_position <= CellProperties.s[2])
+                       || ( ray_position >= CellProperties.s[0] && ray_position < CellProperties.s[2] ) )
+                    {       // If a ray is located in the current grid cell
+                        
+                        // Update the ray's position with the recursive function UpdateRayPosition()
+                        UpdateRayPosition( p, r, *delta_t, pActiveCell );
+                        
+                        pActiveCell->GetCellProperties( &CellProperties );
+                        
+                        ray_position = pHeat->GetRayPosition( p, r );
+                        
+                        // Store the new ray position and Poynting flux for use in the next loop to heat
+                        ray_position_vector[p].push_back( ray_position );
+                        poynting_flux_vector[p].push_back( pHeat->GetRayPoyntingFlux( p, r ) );
+                        
+                        break; // Break the while loop once the ray is found
+                    }
+                    
+                    pNextActiveCell = pActiveCell->pGetPointer( RIGHT );
+                }
+                
+                if( ray_position < minimum_position[p] )
+                    minimum_position[p] = ray_position;
+                if( ray_position > maximum_position[p] )
+                    maximum_position[p] = ray_position;
+            }
+        }
+    }
+    
+    // Write an output file with the rays -- should be placed with other outputs in mesh.cpp?
+    //  -- The current issue is that mesh.cpp doesn't have access to the pulses/rays.
+    // This loop also deletes rays with negligible Poynting flux
+    if( current_time > pHeat->GetNextOutputTime() )
+    {
+        pHeat->SetNextOutputTime( pHeat->GetNextOutputTime() + Params.OutputPeriod );
+        
+        sprintf( szRayFilename, "Results/rays%i.txt", pHeat->GetRayFileNumber() );
+        pRayFile = fopen( szRayFilename, "w" );
+        
+        for( p=0; p<pHeat->GetNumberOfPulses(); p++ )
+        {
+            for( r=0; r< pHeat->GetNumRaysInPulse(p); r++ )
+                fprintf( pRayFile, "%i\t%i\t%.8e\t%.8e\n", p, r, pHeat->GetRayPosition( p, r), pHeat->GetRayPoyntingFlux(p, r));
+            
+            // Clean up any rays with negligible Poynting flux.  No need to waste CPU time on them!
+            // Loop backwards over the rays since deletion would then shift indices and cause a segfault
+            for( r = pHeat->GetNumRaysInPulse(p)-1; r >= 0 ; r-- )
+                if ( pHeat->GetRayPoyntingFlux( p, r ) < 1.0e-10 )
+                    pHeat->DeleteRay( p, r );
+        }
+        
+        fclose( pRayFile );
+        pHeat->IncrementRayFileNumber();
+    }
+    
+    // This loop locates the rays closest to a grid cell center and interpolates the Poynting flux,
+    // then heats the grid cells.  Only heats grid cells which currently have waves in them.
+    // Uses vector iterators to find the rays
+    pNextActiveCell = pStartOfCurrentRow->pGetPointer( RIGHT )->pGetPointer( RIGHT );
+    while( pNextActiveCell->pGetPointer( RIGHT )->pGetPointer( RIGHT ) )
+    {
+        pActiveCell = pNextActiveCell;
+        pActiveCell->GetCellProperties( &CellProperties );
+        
+#if defined (ELECTRON_HEATING_ONLY) || defined(HYDROGEN_HEATING_ONLY)
+#ifdef ELECTRON_HEATING_ONLY
+        CellProperties.TE_KE_term[4][ELECTRON] = pHeat->CalculateHeating( CellProperties.s[1], current_time );
+        CellProperties.TE_KE_term[4][HYDROGEN] = SMALLEST_DOUBLE;
+#endif // ELECTRON_HEATING_ONLY
+#ifdef HYDROGEN_HEATING_ONLY
+        CellProperties.TE_KE_term[4][HYDROGEN] = pHeat->CalculateHeating( CellProperties.s[1], current_time );
+        CellProperties.TE_KE_term[4][ELECTRON] = SMALLEST_DOUBLE;
+#endif // HYDROGEN_HEATING_ONLY
+#else // ELECTRON_HEATING_ONLY || HYDROGEN_HEATING_ONLY
+        term1 = pHeat->CalculateHeating( CellProperties.s[1], current_time );
+        CellProperties.TE_KE_term[4][ELECTRON] = ELECTRON_HEATING * term1;
+        CellProperties.TE_KE_term[4][HYDROGEN] = HYDROGEN_HEATING * term1;
+#endif // // ELECTRON_HEATING_ONLY || HYDROGEN_HEATING_ONLY
+
+        
+        pActiveCell->UpdateCellProperties( &CellProperties );
+        
+        for( p=0; p<pHeat->GetNumberOfPulses(); p++ )
+        {   // Loop over the pulses
+            
+            if( pHeat->IsPulseInitialized(p) )
+            {   // Only perform actions on pulses that have already been initialized
+                
+                if( CellProperties.s[1] > minimum_position[p] && CellProperties.s[1] < maximum_position[p])
+                {   // If the grid cell is located between the edges of a wave pulse,
+                    
+                    if( pHeat->GetRaySign(p, 0) < 0.)
+                    {       // If the ray is moving to the left
+                        
+                        // Find the indices of the nearest two rays from the grid cell center
+                        closest_higher = std::upper_bound( ray_position_vector[p].begin(), ray_position_vector[p].end(), CellProperties.s[1] );
+                        closest_lower = std::lower_bound( ray_position_vector[p].begin(), ray_position_vector[p].end(), CellProperties.s[1] );
+                        
+                        index_lower = closest_lower - ray_position_vector[p].begin() - 1;
+                        index_higher = closest_higher - ray_position_vector[p].begin();
+                        
+                        // Interpolate the Poynting flux value at grid cell center
+                        if( ray_position_vector[p][index_higher] - ray_position_vector[p][index_lower] == 0. )
+                            interpolated_poynting_flux = poynting_flux_vector[p][index_lower];
+                        else
+                            interpolated_poynting_flux = poynting_flux_vector[p][index_lower] + (poynting_flux_vector[p][index_higher] - poynting_flux_vector[p][index_lower]) * (CellProperties.s[1] - ray_position_vector[p][index_lower] ) / ( ray_position_vector[p][index_higher] - ray_position_vector[p][index_lower] );
+                        
+                    }
+                    else   // If the ray is moving to the right
+                    {
+                        // Find the indices of the nearest two rays from the grid cell center
+                        reverse_position_vector = ray_position_vector[p];
+                        reverse_poynting_vector = poynting_flux_vector[p];
+                        
+                        std::reverse(reverse_position_vector.begin(),reverse_position_vector.end());
+                        std::reverse(reverse_poynting_vector.begin(),reverse_poynting_vector.end());
+                        
+                        closest_higher = std::upper_bound( reverse_position_vector.begin(), reverse_position_vector.end(), CellProperties.s[1] );
+                        
+                        index_higher = closest_higher - reverse_position_vector.begin();
+                        index_lower = index_higher - 1;
+                        
+                        // Interpolate the Poynting flux value at grid cell center
+                        if( reverse_position_vector[index_higher] - reverse_position_vector[index_lower] == 0. )
+                            interpolated_poynting_flux = reverse_poynting_vector[index_lower];
+                        else
+                            interpolated_poynting_flux = reverse_poynting_vector[index_lower] + (reverse_poynting_vector[index_higher] - reverse_poynting_vector[index_lower]) * (CellProperties.s[1] - reverse_position_vector[index_lower] ) / ( reverse_position_vector[index_higher] - reverse_position_vector[index_lower] );
+                    }
+                    
+                    // Calculate the heat from that value
+                    CalculateInterpolatedHeating( p, index_lower, interpolated_poynting_flux, pActiveCell );
+                    
+                }
+            }
+        }
+        
+        pNextActiveCell = pActiveCell->pGetPointer( RIGHT );
+    }
+    
+#endif // ALFVEN_WAVE_HEATING
+
+
 // *****************************************************************************
 // *    TERMS OF THE CONSERVATION EQUATIONS                                    *
 // *****************************************************************************
@@ -2463,6 +2665,11 @@ int j;
 // *    HEATING                                                                *
 // *****************************************************************************
 
+#ifndef ALFVEN_WAVE_HEATING
+    // If Alfven Wave heating is defined, then the heating terms
+    // are all already calculated.  So, only calculate them when it is
+    // NOT defined
+
 #ifdef BEAM_HEATING
 	// The beam heating function is called in the section above where the cell-centered terms are calculated
 #if defined (ELECTRON_HEATING_ONLY) || defined(HYDROGEN_HEATING_ONLY)
@@ -2494,6 +2701,9 @@ int j;
 	CellProperties.TE_KE_term[4][HYDROGEN] = HYDROGEN_HEATING * term1;
 #endif // // ELECTRON_HEATING_ONLY || HYDROGEN_HEATING_ONLY
 #endif // BEAM_HEATING
+
+#endif // ALFVEN_WAVE_HEATING
+
 
 // *****************************************************************************
 // *    RADIATION                                                              *
@@ -2745,6 +2955,12 @@ int j;
     	if( CellProperties.atomic_delta_t < *delta_t )
         	*delta_t = CellProperties.atomic_delta_t;
 #endif // NON_EQUILIBRIUM_RADIATION
+
+#ifdef ALFVEN_WAVE_HEATING
+        if( pHeat->GetRayTimeScale() < *delta_t )
+            *delta_t = pHeat->GetRayTimeScale();
+#endif // ALFVEN_WAVE_HEATING
+
 
 	    pNextActiveCell = pActiveCell->pGetPointer( RIGHT );
 	}
@@ -3238,3 +3454,165 @@ for( iIndex=Params.iNumberOfCells-3; iIndex>=0; iIndex-- )
 #endif // OPENMP
 }
 #endif // USE_KINETIC_MODEL
+
+#ifdef ALFVEN_WAVE_HEATING
+    void CEquations::UpdateRayPosition( int pulse_index, int ray_index, double time_step, PCELL pCurrentCell )
+    {   // Updates the position of a ray, recursively calling the function for subsequent grid cells
+        // until the ray covers the actual distance it would travel in the time-step.
+        // Heats the traversed grid cells and damps the Poynting flux of the ray.
+        
+        CELLPROPERTIES CellProperties;
+        double remaining_cell_width, B, x, nu_ni, v_A, dt, coulomb_log, nu_ei, nu_en, eta_par, inverseL_De, eta_C, inverseL_DH, inverseL_DT, frequency, k_x_z, theta_squared;
+        
+        pCurrentCell->GetCellProperties( &CellProperties );
+        
+        frequency = pHeat->GetRayFrequency(pulse_index, ray_index);
+        B = pHeat->CalculateMagneticField(CellProperties.s[1], Params.L);
+        
+        // The perpendicular wavenumber at the current height:
+        k_x_z = pHeat->GetRayWaveNumber(pulse_index, ray_index) * (B/pHeat->CalculateMagneticField(0.0, Params.L));
+        
+        if( pHeat->GetRaySign(pulse_index, ray_index) < 0. )
+            remaining_cell_width = fabs(CellProperties.s[0] - pHeat->GetRayPosition(pulse_index, ray_index) );
+        else
+            remaining_cell_width = fabs(CellProperties.s[2] - pHeat->GetRayPosition(pulse_index, ray_index) );
+        
+#if defined (OPTICALLY_THICK_RADIATION) || defined(BEAM_HEATING)        
+        x = 1.0 - CellProperties.HI;
+#else
+        x = 1.0;
+#endif // OPTICALLY_THICK_RADIATION || BEAM_HEATING
+        
+        // Does not currently include collisions with ions besides hydrogen:
+        nu_ni = 2.65e-10 * sqrt(CellProperties.T[HYDROGEN]) * pow(1. - 0.083 * log10(CellProperties.T[HYDROGEN]), 2.) * CellProperties.n[HYDROGEN] * x;
+        
+        // 39.478420 = 4 pi^2
+        // See Reep et al 2018 or Reep & Russell 2016 for definition of theta
+        theta_squared = 39.478420 * (frequency * frequency) / (nu_ni * nu_ni);
+        
+        // 12.566371 = 4 pi
+        v_A = ( (B/sqrt(12.566371 * CellProperties.rho[1])) * sqrt( (1.0 + x * theta_squared) / (1.0 + x * x * theta_squared)  ) );
+        
+        dt = remaining_cell_width / v_A;  // The time to escape the current grid cell
+        
+        coulomb_log = pHeat->CalculateCoulombLog( CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN], CellProperties.T[ELECTRON], CellProperties.T[HYDROGEN], x);
+        
+        nu_ei = 5.8786066e-24 * CellProperties.n[HYDROGEN] * x * coulomb_log * pow(BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON], -1.5) ;
+        
+        if( CellProperties.T[ELECTRON] < 7407.0 )
+            nu_en = 4.5e-9 * sqrt(CellProperties.T[ELECTRON]) * (1. - 1.35e-4 * CellProperties.T[ELECTRON]) * (CellProperties.n[HYDROGEN] * (1.-x));
+        else
+            nu_en = 0.0;
+        
+        // 3.948452165e-9 = m_e / e^2
+        eta_par = 3.948452165e-9 * (nu_ei + nu_en ) / ( CellProperties.n[ELECTRON] );
+        
+        // 7.152066267e19 = c^2 / (4 pi) in units of (cm/s)^2
+        // 39.478420 = 4 pi^2
+        inverseL_De = (7.152066267e19 * eta_par * (k_x_z * k_x_z * v_A * v_A + 39.478420 * frequency * frequency) / ( v_A * v_A * v_A ) );
+        
+        // 8.9875517873681767e+20 = c^2
+        // 39.478420 = 4 pi^2
+        eta_C = (B * B * (1.0-x)) / (8.9875517873681767e+20 * nu_ni * CellProperties.rho[1] * (1.0 + 39.478420 * theta_squared * x * x) );
+        
+        // 2.8235227e21 = pi * c^2  in units of (cm/s)^2
+        inverseL_DH = (2.8235227e21 * eta_C * frequency * frequency) / ( v_A * v_A * v_A );
+        
+        //inverseL_DT = pHeat->CalculateInverseL_DT( inverseL_DH, inverseL_De );
+        inverseL_DT = inverseL_DH + inverseL_De;
+        
+        if( dt >= time_step )
+        {
+            // If the time to traverse the cell is larger than the current time step, then
+            // it remains in the same grid cell.  Update the position accordingly, damp
+            // the ray, and heat the plasma in the current grid cell.
+            
+            pHeat->UpdateRayPoyntingFlux( pulse_index, ray_index, pHeat->GetRayPoyntingFlux(pulse_index, ray_index), v_A * time_step, inverseL_DT ) ;
+            
+            pHeat->SetRayPosition( pulse_index, ray_index, pHeat->GetRaySign(pulse_index, ray_index) * v_A * time_step );
+            
+        }
+        else
+        {
+            // If the time to traverse the cell is smaller than the current time step, then
+            // damp the ray and heat the plasma of the cell it's exiting, and then recursively
+            // call this function for the next grid cell until it does not exit a new cell.
+            
+            pHeat->UpdateRayPoyntingFlux( pulse_index, ray_index, pHeat->GetRayPoyntingFlux(pulse_index, ray_index), v_A * dt, inverseL_DT ) ;
+            
+            if( pHeat->GetRaySign(pulse_index, ray_index) < 0. )
+            {
+                pHeat->SetRayPosition( pulse_index, ray_index, (-1.) * v_A * dt );
+                UpdateRayPosition( pulse_index, ray_index , time_step - dt, pCurrentCell->pGetPointer( LEFT ) );
+            }
+            else
+            {
+                pHeat->SetRayPosition( pulse_index, ray_index, v_A * dt );
+                UpdateRayPosition( pulse_index, ray_index , time_step - dt, pCurrentCell->pGetPointer( RIGHT ) );
+            }
+        }
+    }
+    
+    void CEquations::CalculateInterpolatedHeating( int pulse_index, int ray_index, double Poynting_flux, PCELL pCurrentCell )
+    {
+        CELLPROPERTIES CellProperties;
+        double B, x, nu_ni, v_A, coulomb_log, nu_ei, nu_en, eta_par, inverseL_De, eta_C, inverseL_DH, frequency, k_x_z, theta_squared;
+        
+        pCurrentCell->GetCellProperties( &CellProperties );
+        
+        // Get the wave parameters for the given ray
+        frequency = pHeat->GetRayFrequency(pulse_index, ray_index);
+        B = pHeat->CalculateMagneticField(CellProperties.s[1], Params.L);
+        
+        // The perpendicular wavenumber at the current height:
+        k_x_z = pHeat->GetRayWaveNumber(pulse_index, ray_index) * (B/pHeat->CalculateMagneticField(0.0, Params.L));
+
+#if defined (OPTICALLY_THICK_RADIATION) || defined(BEAM_HEATING)        
+        x = 1.0 - CellProperties.HI;
+#else
+        x = 1.0;
+#endif // OPTICALLY_THICK_RADIATION || BEAM_HEATING
+        
+        // Equation taken from Russell & Fletcher 2013
+        // Does not currently include collisions with ions besides hydrogen:
+        nu_ni = 2.65e-10 * sqrt(CellProperties.T[HYDROGEN]) * pow(1. - 0.083 * log10(CellProperties.T[HYDROGEN]), 2.) * CellProperties.n[HYDROGEN] * x;
+        
+        // 39.478420 = 4 pi^2
+        // See Reep et al 2018 or Reep & Russell 2016 for definition of theta
+        theta_squared = 39.478420 * (frequency * frequency) / (nu_ni * nu_ni);
+        
+        // 12.566371 = 4 pi
+        v_A = ( (B/sqrt(12.566371 * CellProperties.rho[1])) * sqrt( (1.0 + x * theta_squared) / (1.0 + x * x * theta_squared)  ) );
+        
+        coulomb_log = pHeat->CalculateCoulombLog( CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN], CellProperties.T[ELECTRON], CellProperties.T[HYDROGEN], x);
+        
+        // 5.8786066e-24 = 8 sqrt(pi) * e^4 / (3 sqrt(2) sqrt(m_e))
+        nu_ei = 5.8786066e-24 * CellProperties.n[HYDROGEN] * x * coulomb_log * pow(BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON], -1.5) ;
+        
+        if( CellProperties.T[ELECTRON] < 7407.0 )
+            nu_en = 4.5e-9 * sqrt(CellProperties.T[ELECTRON]) * (1. - 1.35e-4 * CellProperties.T[ELECTRON]) * (CellProperties.n[HYDROGEN] * (1.-x));
+        else
+            nu_en = 0.0;
+        
+        // 3.948452165e-9 = m_e / e^2
+        eta_par = 3.948452165e-9 * (nu_ei + nu_en ) / ( CellProperties.n[ELECTRON] );
+        
+        // 7.152066267e19 = c^2 / (4 pi) in units of (cm/s)^2
+        // 39.478420 = 4 pi^2
+        inverseL_De = (7.152066267e19 * eta_par * (k_x_z * k_x_z * v_A * v_A + 39.478420 * frequency * frequency) / ( v_A * v_A * v_A ) );
+        
+        // 8.9875517873681767e+20 = c^2
+        // 39.478420 = 4 pi^2
+        eta_C = (B * B * (1.0-x)) / (8.9875517873681767e20 * nu_ni * CellProperties.rho[1] * (1.0 + 39.478420 * theta_squared * x * x) );
+        
+        // 2.8235227e21 = pi * c^2  in units of (cm/s)^2
+        inverseL_DH = (2.8235227e21 * eta_C * frequency * frequency) / ( v_A * v_A * v_A );
+        
+        // Finally, the heating rates!
+        CellProperties.TE_KE_term[4][ELECTRON] += Poynting_flux * inverseL_De ;
+        CellProperties.TE_KE_term[4][HYDROGEN] += Poynting_flux * inverseL_DH ;
+        
+        pCurrentCell->UpdateCellProperties( &CellProperties );
+        
+    }
+#endif //ALFVEN_WAVE_HEATING
