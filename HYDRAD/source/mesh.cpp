@@ -366,6 +366,13 @@ do {
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
 
+#ifdef BEAM_HEATING
+                NewCellProperties[0].beam_Qe = ( CellProperties.beam_Qe + RightCellProperties.beam_Qe ) / 2.0;
+#ifdef RETURN_CURRENT
+                NewCellProperties[0].beam_QH = ( CellProperties.beam_QH + RightCellProperties.beam_QH ) / 2.0;
+#endif // RETURN_CURRENT
+#endif // BEAM_HEATING
+
 				pNewCell[0] = new CAdaptiveMeshCell( &(NewCellProperties[0]) );
 
 				pLeftCell = pActiveCell->pGetPointer( LEFT );
@@ -616,6 +623,35 @@ do {
 #endif // LINEAR_RESTRICTION
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef BEAM_HEATING
+                        y[1] = FarLeftCellProperties.beam_Qe;
+                        y[2] = LeftCellProperties.beam_Qe;
+                        y[3] = CellProperties.beam_Qe;
+                        y[4] = RightCellProperties.beam_Qe;
+                        y[5] = FarRightCellProperties.beam_Qe;
+#ifdef LINEAR_RESTRICTION
+                        LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_Qe) );
+                        LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_Qe) );
+#else 
+                        FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].beam_Qe), &error );
+                        FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_Qe), &error );
+#endif // LINEAR_RESTRICTION
+#ifdef RETURN_CURRENT
+                        y[1] = FarLeftCellProperties.beam_QH;
+                        y[2] = LeftCellProperties.beam_QH;
+                        y[3] = CellProperties.beam_QH;
+                        y[4] = RightCellProperties.beam_QH;
+                        y[5] = FarRightCellProperties.beam_QH;
+#ifdef LINEAR_RESTRICTION
+                        LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_QH) );
+                        LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_QH) );
+#else 
+                        FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].beam_QH), &error );
+                        FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_QH), &error );
+#endif // LINEAR_RESTRICTION
+#endif // RETURN_CURRENT
+#endif // BEAM_HEATING
 		    		}
                     else if( !pFarLeftCell )
                     {
@@ -697,6 +733,33 @@ do {
 #endif // LINEAR_RESTRICTION
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef BEAM_HEATING
+						y[2] = LeftCellProperties.beam_Qe;
+						y[3] = CellProperties.beam_Qe;
+						y[4] = RightCellProperties.beam_Qe;
+						y[5] = FarRightCellProperties.beam_Qe;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_Qe) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_Qe) );
+#else
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_Qe), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_Qe), &error );
+#endif // LINEAR_RESTRICTION
+#ifdef RETURN_CURRENT
+						y[2] = LeftCellProperties.beam_QH;
+						y[3] = CellProperties.beam_QH;
+						y[4] = RightCellProperties.beam_QH;
+						y[5] = FarRightCellProperties.beam_QH;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_QH) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_QH) );
+#else
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_QH), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_QH), &error );
+#endif // LINEAR_RESTRICTION
+#endif // RETURN_CURRENT
+#endif // BEAM_HEATING
                     }
                     else if( !pFarRightCell )
                     {
@@ -778,6 +841,33 @@ do {
 #endif // LINEAR_RESTRICTION
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef BEAM_HEATING
+						y[1] = FarLeftCellProperties.beam_Qe;
+						y[2] = LeftCellProperties.beam_Qe;
+						y[3] = CellProperties.beam_Qe;
+						y[4] = RightCellProperties.beam_Qe;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_Qe) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_Qe) );
+#else
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].beam_Qe), &error );
+						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].beam_Qe), &error );
+#endif // LINEAR_RESTRICTION
+#ifdef RETURN_CURRENT
+						y[1] = FarLeftCellProperties.beam_QH;
+						y[2] = LeftCellProperties.beam_QH;
+						y[3] = CellProperties.beam_QH;
+						y[4] = RightCellProperties.beam_QH;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_QH) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_QH) );
+#else
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].beam_QH), &error );
+						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].beam_QH), &error );
+#endif // LINEAR_RESTRICTION
+#endif // RETURN_CURRENT
+#endif // BEAM_HEATING
                     }
 				}
 				else
@@ -833,6 +923,19 @@ do {
                     LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].rho_e) );
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef BEAM_HEATING
+                    y[1] = CellProperties.beam_Qe;
+                    y[2] = RightCellProperties.beam_Qe;
+                    LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].beam_Qe) );
+                    LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].beam_Qe) );
+#ifdef RETURN_CURRENT
+                    y[1] = CellProperties.beam_QH;
+                    y[2] = RightCellProperties.beam_QH;
+                    LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].beam_QH) );
+                    LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].beam_QH) );
+#endif // RETURN_CURRENT
+#endif // BEAM_HEATING
 				}
 
 // ******************************************************************************
@@ -1064,6 +1167,35 @@ do {
 #endif // LINEAR_RESTRICTION
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef BEAM_HEATING
+						y[1] = FarLeftCellProperties.beam_Qe;
+						y[2] = LeftCellProperties.beam_Qe;
+						y[3] = CellProperties.beam_Qe;
+						y[4] = RightCellProperties.beam_Qe;
+						y[5] = FarRightCellProperties.beam_Qe;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_Qe) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_Qe) );
+#else
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].beam_Qe), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_Qe), &error );
+#endif // LINEAR_RESTRICTION
+#ifdef RETURN_CURRENT
+						y[1] = FarLeftCellProperties.beam_QH;
+						y[2] = LeftCellProperties.beam_QH;
+						y[3] = CellProperties.beam_QH;
+						y[4] = RightCellProperties.beam_QH;
+						y[5] = FarRightCellProperties.beam_QH;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_QH) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_QH) );
+#else
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].beam_QH), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_QH), &error );
+#endif // LINEAR_RESTRICTION
+#endif // RETURN_CURRENT
+#endif // BEAM_HEATING
                     }
                     else if( !pFarLeftCell )
                     {
@@ -1145,6 +1277,33 @@ do {
 #endif // LINEAR_RESTRICTION
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef BEAM_HEATING
+						y[2] = LeftCellProperties.beam_Qe;
+						y[3] = CellProperties.beam_Qe;
+						y[4] = RightCellProperties.beam_Qe;
+						y[5] = FarRightCellProperties.beam_Qe;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_Qe) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_Qe) );
+#else
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_Qe), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_Qe), &error );
+#endif // LINEAR_RESTRICTION
+#ifdef RETURN_CURRENT
+						y[2] = LeftCellProperties.beam_QH;
+						y[3] = CellProperties.beam_QH;
+						y[4] = RightCellProperties.beam_QH;
+						y[5] = FarRightCellProperties.beam_QH;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_QH) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_QH) );
+#else
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_QH), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_QH), &error );
+#endif // LINEAR_RESTRICTION
+#endif // RETURN_CURRENT
+#endif // BEAM_HEATING
                     }
                     else if( !pFarRightCell )
                     {
@@ -1227,6 +1386,33 @@ do {
 #endif // LINEAR_RESTRICTION
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef BEAM_HEATING
+						y[1] = FarLeftCellProperties.beam_Qe;
+						y[2] = LeftCellProperties.beam_Qe;
+						y[3] = CellProperties.beam_Qe;
+						y[4] = RightCellProperties.beam_Qe;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_Qe) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_Qe) );
+#else
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].beam_Qe), &error );
+						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].beam_Qe), &error );
+#endif // LINEAR_RESTRICTION
+#ifdef RETURN_CURRENT
+						y[1] = FarLeftCellProperties.beam_QH;
+						y[2] = LeftCellProperties.beam_QH;
+						y[3] = CellProperties.beam_QH;
+						y[4] = RightCellProperties.beam_QH;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].beam_QH) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].beam_QH) );
+#else
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].beam_QH), &error );
+						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].beam_QH), &error );
+#endif // LINEAR_RESTRICTION
+#endif // RETURN_CURRENT
+#endif // BEAM_HEATING
                     }
 				}
 				else
@@ -1282,6 +1468,19 @@ do {
                     LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].rho_e) );
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef BEAM_HEATING
+                    y[1] = LeftCellProperties.beam_Qe;
+                    y[2] = CellProperties.beam_Qe;
+                    LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].beam_Qe) );
+                    LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].beam_Qe) );
+#ifdef RETURN_CURRENT
+                    y[1] = LeftCellProperties.beam_QH;
+                    y[2] = CellProperties.beam_QH;
+                    LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].beam_QH) );
+                    LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].beam_QH) );
+#endif // RETURN_CURRENT
+#endif // BEAM_HEATING
 				}
 
 // ******************************************************************************

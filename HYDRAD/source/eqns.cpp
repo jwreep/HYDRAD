@@ -253,6 +253,9 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
 	double fQbeam, fLambda1, fLambda2, log_fAvgEE;
 	log_fAvgEE = log( pHeat->GetAvgEE() );
 	fLambda2 = 25.1 + log_fAvgEE;
+    
+    beam_update_time = 0.0;
+    minimum_collision_delta_t = 1e100;
 #endif // BEAM_HEATING
 
 	memset( &CellProperties, 0, sizeof(CELLPROPERTIES) );	// Avoids a warning that variables might be used undefined
@@ -1511,6 +1514,8 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
     double deltaE_nt = cutoff_energy * pow(100.0, (1.0/(delta-1.0))) / N_NT_ENERGY;
     x_RC_left = -1.0;
     x_RC_right = -1.0;
+    
+    minimum_collision_delta_t = 1e100;
 
 #ifdef OPTICALLY_THICK_RADIATION
 #ifdef NLTE_CHROMOSPHERE
@@ -2143,151 +2148,165 @@ int j;
 		fColumnDensitystar += ( ( (fLambda1*(1.0-CellProperties.HI)) + (fLambda2*CellProperties.HI) ) / fLambda1 ) * CellProperties.n[HYDROGEN] * CellProperties.cell_width;
 		CellProperties.nH_c = fColumnDensity;
 		CellProperties.nH_star_c = fColumnDensitystar;
-        
-        // Should E_thermal use T_e or T_H?
-        CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
-        CellProperties.E_min = cutoff_energy;
-        CellProperties.dFebyds = 0.0;
-        CellProperties.sum_F_ex = 0.0;
-        #ifdef RETURN_CURRENT
-        CellProperties.F_RC = 0.0;
-        #endif // RETURN_CURRENT
-        
-        if( pActiveCell == pCentreOfCurrentRow )
-        {
-            // Calculate the total force from the return current in the injection cell:
-            for( j = 0; j < N_NT_ENERGY; ++j )
-            {
-                CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
-                CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
-                
-                #ifdef RETURN_CURRENT
-                // Calculate the force from the return current, = q_e E_RC
-                // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
-                CellProperties.F_RC += (4.633457864432091e-27) * CellProperties.F_ex[j] * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
-                #endif // RETURN_CURRENT
-            }
+ 
+        if(current_time >= beam_update_time)
+        {   //Update the beam heating every collisional time-scale
+            // Saves a ton of calculation time, while this is the physical time-scale for meaningful changes in the heating
+       
+            // Should E_thermal use T_e or T_H?
+            CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
+            CellProperties.E_min = cutoff_energy;
+            CellProperties.dFebyds = 0.0;
+            CellProperties.sum_F_ex = 0.0;
             #ifdef RETURN_CURRENT
-            CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
+            CellProperties.F_RC = 0.0;
             #endif // RETURN_CURRENT
-        }
-        
-        for( j = 0; j < N_NT_ENERGY; ++j )
-        {
+            
             if( pActiveCell == pCentreOfCurrentRow )
             {
-                CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
-                CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
-                
-                E_nt0 = CellProperties.nt_energy[j];
-                F_ex0 = CellProperties.F_ex[j];
-                
-                // Calculate the speed of the non-thermal electron (using relativistic kinetic energy)
-                // 8.18710578e-07 erg = m_e c^2 = 510.99895 keV
-                v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / pow(1.0+CellProperties.nt_energy[j]/8.18710578e-07, 2.0) );
-                    
-                // Calculate the e-e Coulomb logarithm:
-                // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
-                fLambda_ee = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
-                    
-                // Calculate the e-H Coulomb logarithm:
-                // - 37.81375318409218 = m_e / 1.105 * chi 
-                // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
-                fLambda_eH = 2.0 * log(v_nt) - 37.81375318409218;
-                
-                // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
-                dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
-                
-                #ifdef RETURN_CURRENT
-                dEbyds -= CellProperties.F_RC;
-
-                // Calculate the Spitzer resistivity
-                // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
-                CellProperties.eta_S = 2.0083453260595434e-08 * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
-                #endif // RETURN_CURRENT
-
-                CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width);
-                
-                // Safety check on energy to make sure it's never negative:
-                if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
-                
-                CellProperties.F_ex[j] *= pow(E_nt0 / CellProperties.nt_energy[j], 1.0 - delta);
-                CellProperties.dFebyds += (F_ex0 - CellProperties.F_ex[j])/(CellProperties.cell_width);
-                CellProperties.sum_F_ex += CellProperties.F_ex[j];
-            }
-            else
-            {
-                pRightCell = pActiveCell->pGetPointer( RIGHT );
-                pRightCell->GetCellProperties( &RightCellProperties );
-
-                if( RightCellProperties.nt_energy[j] > RightCellProperties.E_thermal )
+                // Calculate the total force from the return current in the injection cell:
+                for( j = 0; j < N_NT_ENERGY; ++j )
                 {
+                    CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
+                    CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
+                    
+                    #ifdef RETURN_CURRENT
+                    // Calculate the force from the return current, = q_e E_RC
+                    // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
+                    CellProperties.F_RC += (4.633457864432091e-27) * CellProperties.F_ex[j] * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
+                    #endif // RETURN_CURRENT
+                }
+                #ifdef RETURN_CURRENT
+                CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
+                #endif // RETURN_CURRENT
+            }
+            
+            for( j = 0; j < N_NT_ENERGY; ++j )
+            {
+                if( pActiveCell == pCentreOfCurrentRow )
+                {
+                    CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
+                    CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
+                    
+                    E_nt0 = CellProperties.nt_energy[j];
+                    F_ex0 = CellProperties.F_ex[j];
+                    
                     // Calculate the speed of the non-thermal electron (using relativistic kinetic energy)
                     // 8.18710578e-07 erg = m_e c^2 = 510.99895 keV
-                    v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / pow(1.0+RightCellProperties.nt_energy[j]/8.18710578e-07, 2.0) );
-                    
-                     // Calculate the e-e Coulomb logarithm:
+                    v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / pow(1.0+CellProperties.nt_energy[j]/8.18710578e-07, 2.0) );
+                        
+                    // Calculate the e-e Coulomb logarithm:
                     // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
                     fLambda_ee = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
-                    
+                        
                     // Calculate the e-H Coulomb logarithm:
                     // - 37.81375318409218 = m_e / 1.105 * chi 
                     // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
                     fLambda_eH = 2.0 * log(v_nt) - 37.81375318409218;
                     
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
-                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/RightCellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
-
+                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
+                    
                     #ifdef RETURN_CURRENT
+                    dEbyds -= CellProperties.F_RC;
+
                     // Calculate the Spitzer resistivity
                     // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
                     CellProperties.eta_S = 2.0083453260595434e-08 * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
-
-                    // Calculate the force from the return current, = q_e E_RC
-                    // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
-                    CellProperties.F_RC = pow(ELECTRON_CHARGE, 2.0) * CellProperties.eta_S * RightCellProperties.sum_F_ex;
-                    // Conversion from energy flux to number flux:
-                    CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
-                    dEbyds -= CellProperties.F_RC;
                     #endif // RETURN_CURRENT
-                    
-                    CellProperties.nt_energy[j] = RightCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
+
+                    CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width);
                     
                     // Safety check on energy to make sure it's never negative:
-                    if( CellProperties.nt_energy[j] <= CellProperties.E_thermal )
-                    { 
-                        CellProperties.nt_energy[j] = CellProperties.E_thermal;  
-                        CellProperties.F_ex[j] = 0.0;
-                    }
-                    else
-                    {
-                        CellProperties.F_ex[j] = RightCellProperties.F_ex[j] * pow(RightCellProperties.nt_energy[j] / CellProperties.nt_energy[j], 1.0 - delta);
-                    }
-                 
-                    CellProperties.dFebyds += (CellProperties.F_ex[j] - RightCellProperties.F_ex[j])/(CellProperties.s[0] - RightCellProperties.s[0]);
+                    if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                    
+                    CellProperties.F_ex[j] *= pow(E_nt0 / CellProperties.nt_energy[j], 1.0 - delta);
+                    CellProperties.dFebyds += (F_ex0 - CellProperties.F_ex[j])/(CellProperties.cell_width);
                     CellProperties.sum_F_ex += CellProperties.F_ex[j];
                 }
                 else
-                {   
-                    CellProperties.nt_energy[j] = CellProperties.E_thermal;
-                    CellProperties.F_ex[j] = 0.0;
+                {
+                    pRightCell = pActiveCell->pGetPointer( RIGHT );
+                    pRightCell->GetCellProperties( &RightCellProperties );
+
+                    if( RightCellProperties.nt_energy[j] > RightCellProperties.E_thermal )
+                    {
+                        // Calculate the speed of the non-thermal electron (using relativistic kinetic energy)
+                        // 8.18710578e-07 erg = m_e c^2 = 510.99895 keV
+                        v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / pow(1.0+RightCellProperties.nt_energy[j]/8.18710578e-07, 2.0) );
+                        
+                         // Calculate the e-e Coulomb logarithm:
+                        // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
+                        fLambda_ee = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
+                        
+                        // Calculate the e-H Coulomb logarithm:
+                        // - 37.81375318409218 = m_e / 1.105 * chi 
+                        // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
+                        fLambda_eH = 2.0 * log(v_nt) - 37.81375318409218;
+                        
+                        // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
+                        dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/RightCellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
+
+                        #ifdef RETURN_CURRENT
+                        // Calculate the Spitzer resistivity
+                        // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
+                        CellProperties.eta_S = 2.0083453260595434e-08 * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
+
+                        // Calculate the force from the return current, = q_e E_RC
+                        // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
+                        CellProperties.F_RC = pow(ELECTRON_CHARGE, 2.0) * CellProperties.eta_S * RightCellProperties.sum_F_ex;
+                        // Conversion from energy flux to number flux:
+                        CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
+                        dEbyds -= CellProperties.F_RC;
+                        #endif // RETURN_CURRENT
+                        
+                        CellProperties.nt_energy[j] = RightCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
+                        
+                        // Safety check on energy to make sure it's never negative:
+                        if( CellProperties.nt_energy[j] <= CellProperties.E_thermal )
+                        { 
+                            CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                            CellProperties.F_ex[j] = 0.0;
+                        }
+                        else
+                        {
+                            CellProperties.F_ex[j] = RightCellProperties.F_ex[j] * pow(RightCellProperties.nt_energy[j] / CellProperties.nt_energy[j], 1.0 - delta);
+                        }
+                     
+                        CellProperties.dFebyds += (CellProperties.F_ex[j] - RightCellProperties.F_ex[j])/(CellProperties.s[0] - RightCellProperties.s[0]);
+                        CellProperties.sum_F_ex += CellProperties.F_ex[j];
+                    }
+                    else
+                    {   
+                        CellProperties.nt_energy[j] = CellProperties.E_thermal;
+                        CellProperties.F_ex[j] = 0.0;
+                    }
                 }
             }
-        }
-        // Store the thermalization height of the beam, x_RC (along the left leg of the loop) when we reach it
-        if( (x_RC_left < 0.0) && (CellProperties.nt_energy[0] <= CellProperties.E_thermal) )
-        {
-            x_RC_left = CellProperties.s[0];
-        } 
+            // Store the thermalization height of the beam, x_RC (along the left leg of the loop) when we reach it
+            if( (x_RC_left < 0.0) && (CellProperties.nt_energy[0] <= CellProperties.E_thermal) )
+            {
+                x_RC_left = CellProperties.s[0];
+            } 
 
-        CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
-        
-        #ifdef RETURN_CURRENT
-        if( CellProperties.eta_S > 0.0 )
-        {
-            CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
+            CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
+            CellProperties.beam_Qe = CellProperties.TE_KE_term[4][ELECTRON];
+            
+            #ifdef RETURN_CURRENT
+            if( CellProperties.eta_S > 0.0 )
+            {
+                CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
+                CellProperties.beam_QH = CellProperties.TE_KE_term[4][HYDROGEN];
+            }
+            #endif // RETURN_CURRENT
         }
-        #endif // RETURN_CURRENT
+        else
+        {
+            CellProperties.TE_KE_term[4][ELECTRON] = CellProperties.beam_Qe;
+            #ifdef RETURN_CURRENT
+            CellProperties.TE_KE_term[4][HYDROGEN] = CellProperties.beam_QH;
+            #endif // RETURN_CURRENT
+        }
         
         #ifdef OPTICALLY_THICK_RADIATION
             #ifdef NLTE_CHROMOSPHERE
@@ -2341,148 +2360,162 @@ int j;
 		fColumnDensitystar += ( ( (fLambda1*(1.0-CellProperties.HI)) + (fLambda2*CellProperties.HI) ) / fLambda1 ) * CellProperties.n[HYDROGEN] * CellProperties.cell_width;
 		CellProperties.nH_c = fColumnDensity;
 		CellProperties.nH_star_c = fColumnDensitystar;
-        
-        // Should E_thermal use T_e or T_H?
-        CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
-        CellProperties.E_min = cutoff_energy;
-        CellProperties.dFebyds = 0.0;
-        CellProperties.sum_F_ex = 0.0;
-        #ifdef RETURN_CURRENT
-        CellProperties.F_RC = 0.0;        
-        #endif // RETURN_CURRENT
-
-        if( pActiveCell == pCentreOfCurrentRow )
-        {
-            // Calculate the total force from the return current in the injection cell:
-            for( j = 0; j < N_NT_ENERGY; ++j )
-            {
-                CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
-                CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
                 
-                #ifdef RETURN_CURRENT
-                // Calculate the force from the return current, = q_e E_RC
-                // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
-                CellProperties.F_RC += (4.633457864432091e-27) * CellProperties.F_ex[j] * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
-                #endif // RETURN_CURRENT
-            }
-            #ifdef RETURN_CURRENT
-            CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
-            #endif // RETURN_CURRENT
-        }
+        if(current_time >= beam_update_time)
+        {   //Update the beam heating every collisional time-scale
+            // Saves a ton of calculation time, while this is the physical time-scale for meaningful changes in the heating
 
-        for( j=0; j<N_NT_ENERGY; ++j )
-        {
+            // Should E_thermal use T_e or T_H?
+            CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
+            CellProperties.E_min = cutoff_energy;
+            CellProperties.dFebyds = 0.0;
+            CellProperties.sum_F_ex = 0.0;
+            #ifdef RETURN_CURRENT
+            CellProperties.F_RC = 0.0;        
+            #endif // RETURN_CURRENT
+
             if( pActiveCell == pCentreOfCurrentRow )
             {
-                CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
-                CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
-
-                E_nt0 = CellProperties.nt_energy[j];
-                F_ex0 = CellProperties.F_ex[j];
-                
-                // Calculate the speed of the non-thermal electron (using relativistic kinetic energy)
-                // 8.18710578e-07 erg = m_e c^2 = 510.99895 keV
-                v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / pow(1.0+CellProperties.nt_energy[j]/8.18710578e-07, 2.0) );
-                    
-                // Calculate the e-e Coulomb logarithm:
-                // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
-                fLambda_ee = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
-                    
-                // Calculate the e-H Coulomb logarithm:
-                // - 37.81375318409218 = m_e / 1.105 * chi 
-                // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
-                fLambda_eH = 2.0 * log(v_nt) - 37.81375318409218;
-                                    
-                // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
-                dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
-                
-                #ifdef RETURN_CURRENT
-                dEbyds -= CellProperties.F_RC;
-                #endif // RETURN_CURRENT
-               
-                CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width);
-                
-                // Safety check on energy to make sure it's never negative:
-                if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
-                
-                CellProperties.F_ex[j] *= pow(E_nt0 / CellProperties.nt_energy[j], 1.0 - delta);
-                CellProperties.dFebyds += (F_ex0 - CellProperties.F_ex[j])/(CellProperties.cell_width);
-                CellProperties.sum_F_ex += CellProperties.F_ex[j];
-            }
-            else
-            {
-                pLeftCell = pActiveCell->pGetPointer( LEFT );
-                pLeftCell->GetCellProperties( &LeftCellProperties );
-
-                if( LeftCellProperties.nt_energy[j] > LeftCellProperties.E_thermal )
+                // Calculate the total force from the return current in the injection cell:
+                for( j = 0; j < N_NT_ENERGY; ++j )
                 {
+                    CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
+                    CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
+                
+                    #ifdef RETURN_CURRENT
+                    // Calculate the force from the return current, = q_e E_RC
+                    // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
+                    CellProperties.F_RC += (4.633457864432091e-27) * CellProperties.F_ex[j] * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
+                    #endif // RETURN_CURRENT
+                }
+                #ifdef RETURN_CURRENT
+                CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
+                #endif // RETURN_CURRENT
+            }
+
+            for( j=0; j<N_NT_ENERGY; ++j )
+            {
+                if( pActiveCell == pCentreOfCurrentRow )
+                {
+                    CellProperties.nt_energy[j] = ( float(j) * deltaE_nt + cutoff_energy );
+                    CellProperties.F_ex[j] = BeamParams[0] * pow(cutoff_energy, delta - 1.0) * (pow(CellProperties.nt_energy[j], 1.0-delta) - pow(CellProperties.nt_energy[j]+deltaE_nt, 1.0-delta));
+
+                    E_nt0 = CellProperties.nt_energy[j];
+                    F_ex0 = CellProperties.F_ex[j];
+                
                     // Calculate the speed of the non-thermal electron (using relativistic kinetic energy)
                     // 8.18710578e-07 erg = m_e c^2 = 510.99895 keV
-                    v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / (pow(1.0+LeftCellProperties.nt_energy[j]/8.18710578e-07, 2.0) ) );
-                    
+                    v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / pow(1.0+CellProperties.nt_energy[j]/8.18710578e-07, 2.0) );
+                        
                     // Calculate the e-e Coulomb logarithm:
                     // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
                     fLambda_ee = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
-    
+                        
                     // Calculate the e-H Coulomb logarithm:
                     // - 37.81375318409218 = m_e / 1.105 * chi 
                     // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
                     fLambda_eH = 2.0 * log(v_nt) - 37.81375318409218;
-
+                                        
                     // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
-                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/LeftCellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
+                    dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/CellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
                     
                     #ifdef RETURN_CURRENT
-                    // Calculate the Spitzer resistivity
-                    // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
-                    CellProperties.eta_S = 2.0083453260595434e-08 * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
-
-                    // Calculate the force from the return current, = q_e E_RC
-                    // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
-                    CellProperties.F_RC = pow(ELECTRON_CHARGE, 2.0) * CellProperties.eta_S * LeftCellProperties.sum_F_ex;
-                    // Conversion from energy flux to number flux:
-                    CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
                     dEbyds -= CellProperties.F_RC;
                     #endif // RETURN_CURRENT
                    
-                    CellProperties.nt_energy[j] = LeftCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
+                    CellProperties.nt_energy[j] += (dEbyds * CellProperties.cell_width);
                     
                     // Safety check on energy to make sure it's never negative:
-                    if( CellProperties.nt_energy[j] <= CellProperties.E_thermal )
-                    { 
-                        CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                    if( CellProperties.nt_energy[j] <= CellProperties.E_thermal ) CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                    
+                    CellProperties.F_ex[j] *= pow(E_nt0 / CellProperties.nt_energy[j], 1.0 - delta);
+                    CellProperties.dFebyds += (F_ex0 - CellProperties.F_ex[j])/(CellProperties.cell_width);
+                    CellProperties.sum_F_ex += CellProperties.F_ex[j];
+                }
+                else
+                {
+                    pLeftCell = pActiveCell->pGetPointer( LEFT );
+                    pLeftCell->GetCellProperties( &LeftCellProperties );
+
+                    if( LeftCellProperties.nt_energy[j] > LeftCellProperties.E_thermal )
+                    {
+                        // Calculate the speed of the non-thermal electron (using relativistic kinetic energy)
+                        // 8.18710578e-07 erg = m_e c^2 = 510.99895 keV
+                        v_nt = SPEED_OF_LIGHT * sqrt(1.0 - 1.0 / (pow(1.0+LeftCellProperties.nt_energy[j]/8.18710578e-07, 2.0) ) );
+                        
+                        // Calculate the e-e Coulomb logarithm:
+                        // - 28.4525769015932 = ln(pi^1/2 m_e^(3/2) / q_e^(3)) 
+                        fLambda_ee = 3.0 * log(v_nt) - 0.5 * log(CellProperties.n[ELECTRON]) - 28.4525769015932;
+        
+                        // Calculate the e-H Coulomb logarithm:
+                        // - 37.81375318409218 = m_e / 1.105 * chi 
+                        // for chi the ionization energy of hydrogen = 13.606 eV = 2.1799e-11 erg
+                        fLambda_eH = 2.0 * log(v_nt) - 37.81375318409218;
+
+                        // -2 pi e^4 = -3.344446481925492e-37 statC^4 ( = cm^6 g^2 s^-4 )  
+                        dEbyds = (-3.344446481925492e-37) * (CellProperties.n[HYDROGEN]/LeftCellProperties.nt_energy[j]) * (fLambda_ee*(1.0-CellProperties.HI) + (fLambda_eH*CellProperties.HI));
+                        
+                        #ifdef RETURN_CURRENT
+                        // Calculate the Spitzer resistivity
+                        // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
+                        CellProperties.eta_S = 2.0083453260595434e-08 * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
+
+                        // Calculate the force from the return current, = q_e E_RC
+                        // 4.633457864432091e-27 = 4 *sqrt(2 pi)/3 * Z q_e^4 m_e^1/2 / k_B^3/2, assuming Z = 1.4
+                        CellProperties.F_RC = pow(ELECTRON_CHARGE, 2.0) * CellProperties.eta_S * LeftCellProperties.sum_F_ex;
+                        // Conversion from energy flux to number flux:
+                        CellProperties.F_RC *= (delta-2.0)/((delta-1.0)*cutoff_energy);
+                        dEbyds -= CellProperties.F_RC;
+                        #endif // RETURN_CURRENT
+                       
+                        CellProperties.nt_energy[j] = LeftCellProperties.nt_energy[j] + dEbyds * CellProperties.cell_width;
+                        
+                        // Safety check on energy to make sure it's never negative:
+                        if( CellProperties.nt_energy[j] <= CellProperties.E_thermal )
+                        { 
+                            CellProperties.nt_energy[j] = CellProperties.E_thermal;  
+                            CellProperties.F_ex[j] = 0.0;
+                        }
+                        else
+                        {
+                            CellProperties.F_ex[j] = LeftCellProperties.F_ex[j] * pow(LeftCellProperties.nt_energy[j] / CellProperties.nt_energy[j], 1.0 - delta);
+                        }
+                    
+                        CellProperties.dFebyds += (CellProperties.F_ex[j] - LeftCellProperties.F_ex[j])/(CellProperties.s[0] - LeftCellProperties.s[0]);
+                        CellProperties.sum_F_ex += CellProperties.F_ex[j];
+                   }
+                    else
+                    {   
+                        CellProperties.nt_energy[j] = CellProperties.E_thermal;
                         CellProperties.F_ex[j] = 0.0;
                     }
-                    else
-                    {
-                        CellProperties.F_ex[j] = LeftCellProperties.F_ex[j] * pow(LeftCellProperties.nt_energy[j] / CellProperties.nt_energy[j], 1.0 - delta);
-                    }
-                
-                    CellProperties.dFebyds += (CellProperties.F_ex[j] - LeftCellProperties.F_ex[j])/(CellProperties.s[0] - LeftCellProperties.s[0]);
-                    CellProperties.sum_F_ex += CellProperties.F_ex[j];
-               }
-                else
-                {   
-                    CellProperties.nt_energy[j] = CellProperties.E_thermal;
-                    CellProperties.F_ex[j] = 0.0;
                 }
             }
+            // Store the thermalization height of the beam, x_RC (along the right leg of the loop) when we reach it
+            if( (x_RC_right < 0.0) && (CellProperties.nt_energy[0] <= CellProperties.E_thermal) )
+            {
+                x_RC_right = CellProperties.s[0];
+            }
+            
+            CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
+            CellProperties.beam_Qe = CellProperties.TE_KE_term[4][ELECTRON];
+            
+            #ifdef RETURN_CURRENT
+            if( CellProperties.eta_S > 0.0 )
+            {
+                CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
+                CellProperties.beam_QH = CellProperties.TE_KE_term[4][HYDROGEN];
+            }
+            #endif // RETURN_CURRENT
         }
-        // Store the thermalization height of the beam, x_RC (along the right leg of the loop) when we reach it
-        if( (x_RC_right < 0.0) && (CellProperties.nt_energy[0] <= CellProperties.E_thermal) )
+        else
         {
-            x_RC_right = CellProperties.s[0];
+            CellProperties.TE_KE_term[4][ELECTRON] = CellProperties.beam_Qe;
+            #ifdef RETURN_CURRENT
+            CellProperties.TE_KE_term[4][HYDROGEN] = CellProperties.beam_QH;
+            #endif // RETURN_CURRENT
         }
-        
-        CellProperties.TE_KE_term[4][ELECTRON] = abs(CellProperties.dFebyds);
-        
-        #ifdef RETURN_CURRENT
-        if( CellProperties.eta_S > 0.0 )
-        {
-            CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
-        }
-        #endif // RETURN_CURRENT
-        
+            
         #ifdef OPTICALLY_THICK_RADIATION
             #ifdef NLTE_CHROMOSPHERE
                 pHeat->SetQbeam( CellProperties.s[1], CellProperties.TE_KE_term[4][ELECTRON] );
@@ -2767,6 +2800,15 @@ int j;
     	// If the collisional timescale is less than the minimum specified collisional timescale then scale the rate of energy exchange so that tiny timesteps can be avoided
     	if( CellProperties.collision_delta_t < MINIMUM_COLLISIONAL_COUPLING_TIME_SCALE )
         	CellProperties.TE_KE_term[3][ELECTRON] *= CellProperties.collision_delta_t / MINIMUM_COLLISIONAL_COUPLING_TIME_SCALE;
+            
+#ifdef BEAM_HEATING
+    if( current_time >= beam_update_time && 
+        CellProperties.collision_delta_t >= MINIMUM_COLLISIONAL_COUPLING_TIME_SCALE && 
+        CellProperties.collision_delta_t < minimum_collision_delta_t )
+    {
+        minimum_collision_delta_t = CellProperties.collision_delta_t;
+    }
+#endif // BEAM_HEATING
 // **** COLLISIONAL TIME STEP ****
 
 	    CellProperties.TE_KE_term[3][HYDROGEN] = - CellProperties.TE_KE_term[3][ELECTRON];
@@ -2988,6 +3030,13 @@ int j;
 		pNextActiveCell = pActiveCell->pGetPointer( RIGHT );
 	}
 #endif // OPENMP
+
+#ifdef BEAM_HEATING
+if( current_time >= beam_update_time)
+{
+    beam_update_time += minimum_collision_delta_t;
+}
+#endif
 
 	// Find the smallest characteristic time-scale
 	GetSmallestTimeScale( delta_t, iFirstStep );

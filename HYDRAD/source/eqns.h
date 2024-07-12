@@ -87,6 +87,11 @@ class CEquations {
     PCELL pCentreOfCurrentRow;
 #endif // OPTICALLY_THICK_RADIATION || BEAM_HEATING
 
+#ifdef BEAM_HEATING
+    // Use the collisional time scale to determine when to recalculate the beam heating
+    double minimum_collision_delta_t, beam_update_time;
+#endif // BEAM_HEATING
+
     // Pointer to the left-most cell at the previous time (the start of the previous row)
     PCELL pStartOfPreviousRow;
 
