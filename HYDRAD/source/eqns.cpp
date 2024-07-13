@@ -1509,6 +1509,7 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
     double E_nt0, F_ex0;
     double fLambda_ee, fLambda_eH;
     
+    #ifdef KINETIC_BEAM
     // Step size in energy space for the beam calculation, setting the maximum energy to encompass 99% of the beam energy
     //double deltaE_nt = cutoff_energy * (pow(100, 1.0/delta) - 1.0) / N_NT_ENERGY;  
     double deltaE_nt = cutoff_energy * pow(100.0, (1.0/(delta-1.0))) / N_NT_ENERGY;
@@ -1516,6 +1517,7 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
     x_RC_right = -1.0;
     
     minimum_collision_delta_t = 1e100;
+    #endif // KINETIC_BEAM
 
 #ifdef OPTICALLY_THICK_RADIATION
 #ifdef NLTE_CHROMOSPHERE
@@ -2149,6 +2151,7 @@ int j;
 		CellProperties.nH_c = fColumnDensity;
 		CellProperties.nH_star_c = fColumnDensitystar;
  
+    #ifdef KINETIC_BEAM
         if(current_time >= beam_update_time)
         {   //Update the beam heating every collisional time-scale
             // Saves a ton of calculation time, while this is the physical time-scale for meaningful changes in the heating
@@ -2313,6 +2316,8 @@ int j;
                 pHeat->SetQbeam( CellProperties.s[1], CellProperties.TE_KE_term[4][ELECTRON] );
             #endif // NLTE_CHROMOSPHERE
         #endif // OPTICALLY_THICK_RADIATION
+    
+    #endif // KINETIC_BEAM
 
 #endif // BEAM_HEATING
 
@@ -2360,7 +2365,8 @@ int j;
 		fColumnDensitystar += ( ( (fLambda1*(1.0-CellProperties.HI)) + (fLambda2*CellProperties.HI) ) / fLambda1 ) * CellProperties.n[HYDROGEN] * CellProperties.cell_width;
 		CellProperties.nH_c = fColumnDensity;
 		CellProperties.nH_star_c = fColumnDensitystar;
-                
+
+    #ifdef KINETIC_BEAM
         if(current_time >= beam_update_time)
         {   //Update the beam heating every collisional time-scale
             // Saves a ton of calculation time, while this is the physical time-scale for meaningful changes in the heating
@@ -2521,6 +2527,8 @@ int j;
                 pHeat->SetQbeam( CellProperties.s[1], CellProperties.TE_KE_term[4][ELECTRON] );
             #endif // NLTE_CHROMOSPHERE
         #endif // OPTICALLY_THICK_RADIATION
+        
+    #endif // KINETIC_BEAM
 
 #endif // BEAM_HEATING
 
@@ -2540,8 +2548,8 @@ int j;
 // *****************************************************************************
 // *    BEAM HEATING								       					   *
 // *****************************************************************************
-/*
-#ifdef BEAM_HEATING
+
+#if defined(BEAM_HEATING) && !defined(KINETIC_BEAM)
 	pNextActiveCell = pStartOfCurrentRow->pGetPointer( RIGHT )->pGetPointer( RIGHT );
 	while( pNextActiveCell->pGetPointer( RIGHT )->pGetPointer( RIGHT ) )
 	{
@@ -2559,8 +2567,8 @@ int j;
 
 	    pNextActiveCell = pActiveCell->pGetPointer( RIGHT );
 	}
-#endif // BEAM_HEATING
-*/
+#endif // BEAM_HEATING && !KINETIC_BEAM
+
 
 // *****************************************************************************
 // *    TERMS OF THE CONSERVATION EQUATIONS                                    *
@@ -2801,14 +2809,14 @@ int j;
     	if( CellProperties.collision_delta_t < MINIMUM_COLLISIONAL_COUPLING_TIME_SCALE )
         	CellProperties.TE_KE_term[3][ELECTRON] *= CellProperties.collision_delta_t / MINIMUM_COLLISIONAL_COUPLING_TIME_SCALE;
             
-#ifdef BEAM_HEATING
+#if defined(BEAM_HEATING) && defined(KINETIC_BEAM)
     if( current_time >= beam_update_time && 
         CellProperties.collision_delta_t >= MINIMUM_COLLISIONAL_COUPLING_TIME_SCALE && 
         CellProperties.collision_delta_t < minimum_collision_delta_t )
     {
         minimum_collision_delta_t = CellProperties.collision_delta_t;
     }
-#endif // BEAM_HEATING
+#endif // BEAM_HEATING && KINETIC_BEAM
 // **** COLLISIONAL TIME STEP ****
 
 	    CellProperties.TE_KE_term[3][HYDROGEN] = - CellProperties.TE_KE_term[3][ELECTRON];
@@ -3031,12 +3039,12 @@ int j;
 	}
 #endif // OPENMP
 
-#ifdef BEAM_HEATING
+#if defined(BEAM_HEATING) && defined(KINETIC_BEAM)
 if( current_time >= beam_update_time)
 {
     beam_update_time += minimum_collision_delta_t;
 }
-#endif
+#endif // BEAM_HEATING && KINETIC_BEAM
 
 	// Find the smallest characteristic time-scale
 	GetSmallestTimeScale( delta_t, iFirstStep );
