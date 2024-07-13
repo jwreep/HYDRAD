@@ -28,9 +28,9 @@
 #define MOMENTUM_TERMS  5		// The number of terms in the momentum conservation equation
 #define ENERGY_TERMS    10		// The number of terms in the energy conservation equations
 
-#ifdef BEAM_HEATING
+#if defined(BEAM_HEATING) && defined(KINETIC_BEAM)
     #define N_NT_ENERGY 200
-#endif // BEAM_HEATING
+#endif // BEAM_HEATING && KINETIC_BEAM
 
 
 // **** ADAPTIVE MESH CELL PROPERTIES ****

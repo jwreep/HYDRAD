@@ -254,8 +254,10 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
 	log_fAvgEE = log( pHeat->GetAvgEE() );
 	fLambda2 = 25.1 + log_fAvgEE;
     
-    beam_update_time = 0.0;
-    minimum_collision_delta_t = 1e100;
+    #ifdef KINETIC_BEAM
+        beam_update_time = 0.0;
+        minimum_collision_delta_t = 1e100;
+    #endif // KINETIC_BEAM
 #endif // BEAM_HEATING
 
 	memset( &CellProperties, 0, sizeof(CELLPROPERTIES) );	// Avoids a warning that variables might be used undefined
@@ -1504,19 +1506,19 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
 		avg_energy = ( ( 1.0 - delta )/( 2.0 - delta ) ) * cutoff_energy;
 		log_avg_energy = log(avg_energy);
 		fLambda2 = 25.1 + log_avg_energy;
-        
-    double dEbyds, x_RC_left, x_RC_right, v_nt;
-    double E_nt0, F_ex0;
-    double fLambda_ee, fLambda_eH;
     
     #ifdef KINETIC_BEAM
-    // Step size in energy space for the beam calculation, setting the maximum energy to encompass 99% of the beam energy
-    //double deltaE_nt = cutoff_energy * (pow(100, 1.0/delta) - 1.0) / N_NT_ENERGY;  
-    double deltaE_nt = cutoff_energy * pow(100.0, (1.0/(delta-1.0))) / N_NT_ENERGY;
-    x_RC_left = -1.0;
-    x_RC_right = -1.0;
+        double dEbyds, x_RC_left, x_RC_right, v_nt;
+        double E_nt0, F_ex0;
+        double fLambda_ee, fLambda_eH;
+        
+        // Step size in energy space for the beam calculation, setting the maximum energy to encompass 99% of the beam energy
+        //double deltaE_nt = cutoff_energy * (pow(100, 1.0/delta) - 1.0) / N_NT_ENERGY;  
+        double deltaE_nt = cutoff_energy * pow(100.0, (1.0/(delta-1.0))) / N_NT_ENERGY;
+        x_RC_left = -1.0;
+        x_RC_right = -1.0;
     
-    minimum_collision_delta_t = 1e100;
+        minimum_collision_delta_t = 1e100;
     #endif // KINETIC_BEAM
 
 #ifdef OPTICALLY_THICK_RADIATION

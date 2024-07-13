@@ -90,7 +90,7 @@ class CHeat {
     double CalculateBeamHeating( double t, double *pBeamParams, double nds, double Nstar, double n_e, double n_H, double x );
     #ifdef KINETIC_BEAM
         double CalculateKineticBeamHeating( double t, double *pBeamParams, double nds, double Nstar, double n_e, double n_H, double x );
-    #endif
+    #endif // KINETIC_BEAM
 		#ifdef OPTICALLY_THICK_RADIATION
 			#ifdef NLTE_CHROMOSPHERE
 				// Functions that will provide access to the beam energy input (at the previous time-step) for the non-thermal collision frequency
