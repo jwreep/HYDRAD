@@ -2154,7 +2154,7 @@ int j;
 		CellProperties.nH_star_c = fColumnDensitystar;
  
     #ifdef KINETIC_BEAM
-        if(current_time >= beam_update_time)
+        if(current_time >= beam_update_time && fBeamParams[0] > 0.0)
         {   //Update the beam heating every collisional time-scale
             // Saves a ton of calculation time, while this is the physical time-scale for meaningful changes in the heating
        
@@ -2369,7 +2369,7 @@ int j;
 		CellProperties.nH_star_c = fColumnDensitystar;
 
     #ifdef KINETIC_BEAM
-        if(current_time >= beam_update_time)
+        if(current_time >= beam_update_time && fBeamParams[0] > 0.0)
         {   //Update the beam heating every collisional time-scale
             // Saves a ton of calculation time, while this is the physical time-scale for meaningful changes in the heating
 
