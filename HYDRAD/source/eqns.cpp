@@ -2142,8 +2142,19 @@ int j;
         	// Calculate the mass column density
         	frho_c += CellProperties.rho[1] * CellProperties.cell_width;
         	CellProperties.rho_c = frho_c;
+            if( current_time == 0.0 )
+            {
+                CellProperties.VALHeating = pHeat->CalculateVALHeating( log10(CellProperties.rho_c ) );
+            }
 #endif // NLTE_CHROMOSPHERE
     	}
+        else
+        {
+            if( current_time == 0.0 )
+            {
+                CellProperties.VALHeating = 0.0;
+            }
+        }
 #endif // OPTICALLY_THICK_RADIATION
 
 #ifdef BEAM_HEATING
@@ -2154,7 +2165,7 @@ int j;
 		CellProperties.nH_star_c = fColumnDensitystar;
  
     #ifdef KINETIC_BEAM
-        if(current_time >= beam_update_time && fBeamParams[0] > 0.0)
+        if(current_time >= beam_update_time && BeamParams[0] > 0.0)
         {   //Update the beam heating every collisional time-scale
             // Saves a ton of calculation time, while this is the physical time-scale for meaningful changes in the heating
        
@@ -2298,7 +2309,7 @@ int j;
             CellProperties.beam_Qe = CellProperties.TE_KE_term[4][ELECTRON];
             
             #ifdef RETURN_CURRENT
-            if( CellProperties.eta_S > 0.0 )
+            if( CellProperties.eta_S > 0.0 && CellProperties.T[ELECTRON] > OPTICALLY_THICK_TEMPERATURE )
             {
                 CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
                 CellProperties.beam_QH = CellProperties.TE_KE_term[4][HYDROGEN];
@@ -2357,8 +2368,19 @@ int j;
         	// Calculate the mass column density
         	frho_c += CellProperties.rho[1] * CellProperties.cell_width;
         	CellProperties.rho_c = frho_c;
+            if( current_time == 0.0 )
+            {
+                CellProperties.VALHeating = pHeat->CalculateVALHeating( log10(CellProperties.rho_c ) );
+            }
 #endif // NLTE_CHROMOSPHERE
 	    }
+        else
+        {
+            if( current_time == 0.0 )
+            {
+                CellProperties.VALHeating = 0.0;
+            }
+        }
 #endif // OPTICALLY_THICK_RADIATION
 
 #ifdef BEAM_HEATING
@@ -2369,7 +2391,7 @@ int j;
 		CellProperties.nH_star_c = fColumnDensitystar;
 
     #ifdef KINETIC_BEAM
-        if(current_time >= beam_update_time && fBeamParams[0] > 0.0)
+        if(current_time >= beam_update_time && BeamParams[0] > 0.0)
         {   //Update the beam heating every collisional time-scale
             // Saves a ton of calculation time, while this is the physical time-scale for meaningful changes in the heating
 
@@ -2509,7 +2531,7 @@ int j;
             CellProperties.beam_Qe = CellProperties.TE_KE_term[4][ELECTRON];
             
             #ifdef RETURN_CURRENT
-            if( CellProperties.eta_S > 0.0 )
+            if( CellProperties.eta_S > 0.0 && CellProperties.T[ELECTRON] > OPTICALLY_THICK_TEMPERATURE )
             {
                 CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
                 CellProperties.beam_QH = CellProperties.TE_KE_term[4][HYDROGEN];
@@ -2867,7 +2889,8 @@ int j;
 #ifdef OPTICALLY_THICK_RADIATION
     	if( CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE )
     	{
-        	CellProperties.TE_KE_term[4][ELECTRON] += pHeat->CalculateVALHeating( log10(CellProperties.rho_c ) );
+        	//CellProperties.TE_KE_term[4][ELECTRON] += pHeat->CalculateVALHeating( log10(CellProperties.rho_c ) );
+        CellProperties.TE_KE_term[4][ELECTRON] += CellProperties.VALHeating;
         	CellProperties.TE_KE_term[5][ELECTRON] -= pHI->GetVolumetricLossRate( log10(CellProperties.T[ELECTRON]), log10((4e-14)*CellProperties.HI_c), CellProperties.n[ELECTRON] * CellProperties.rho[1] );
         	CellProperties.TE_KE_term[5][ELECTRON] -= pMgII->GetVolumetricLossRate( log10(CellProperties.T[ELECTRON]), log10(CellProperties.rho_c), CellProperties.n[ELECTRON] * CellProperties.rho[1] );
         	CellProperties.TE_KE_term[5][ELECTRON] -= pCaII->GetVolumetricLossRate( log10(CellProperties.T[ELECTRON]), log10(CellProperties.rho_c), CellProperties.n[ELECTRON] * CellProperties.rho[1] );

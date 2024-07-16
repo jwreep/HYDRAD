@@ -71,12 +71,14 @@ struct AdaptiveMeshCellProperties {
 #ifdef OPTICALLY_THICK_RADIATION
     // The neutral hydrogen population fraction, and the column number and mass densities
     double HI, HI_c, rho_c;
+    double VALHeating;
 	#ifdef BEAM_HEATING
 	    // The hydrogen and modified hydrogen column densities
 	    double nH_c, nH_star_c;
         #ifdef KINETIC_BEAM
             double nt_energy[N_NT_ENERGY], E_thermal, E_min, F_ex[N_NT_ENERGY], dFebyds, sum_F_ex;
             double beam_Qe;
+            
             #ifdef RETURN_CURRENT
             double F_RC, eta_S, beam_QH;
             #endif // RETURN_CURRENT
