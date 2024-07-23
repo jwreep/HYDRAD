@@ -76,7 +76,7 @@ struct AdaptiveMeshCellProperties {
 	    // The hydrogen and modified hydrogen column densities
 	    double nH_c, nH_star_c;
         #ifdef KINETIC_BEAM
-            double nt_energy[N_NT_ENERGY], E_thermal, E_min, F_ex[N_NT_ENERGY], dFebyds, sum_F_ex;
+            double nt_energy[N_NT_ENERGY], E_thermal, F_ex[N_NT_ENERGY], dFebyds, sum_F_ex;
             double beam_Qe;
             
             #ifdef RETURN_CURRENT

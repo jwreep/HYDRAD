@@ -2171,7 +2171,6 @@ int j;
        
             // Should E_thermal use T_e or T_H?
             CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
-            CellProperties.E_min = cutoff_energy;
             CellProperties.dFebyds = 0.0;
             CellProperties.sum_F_ex = 0.0;
             #ifdef RETURN_CURRENT
@@ -2397,7 +2396,6 @@ int j;
 
             // Should E_thermal use T_e or T_H?
             CellProperties.E_thermal = delta * BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON];
-            CellProperties.E_min = cutoff_energy;
             CellProperties.dFebyds = 0.0;
             CellProperties.sum_F_ex = 0.0;
             #ifdef RETURN_CURRENT
