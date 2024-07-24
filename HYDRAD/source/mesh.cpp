@@ -2105,6 +2105,17 @@ pHStateFile = fopen( szHStateFilename, "w" );
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
 
+#ifdef BEAM_HEATING
+#ifdef KINETIC_BEAM
+#ifdef WRITE_FILE_KINETIC_BEAM
+FILE *pBeamFile;
+char szBeamFilename[256];
+sprintf( szBeamFilename, "Results/profile%i.bm", iFileNumber );
+pBeamFile = fopen( szBeamFilename, "w" );
+#endif // WRITE_FILE_KINETIC_BEAM
+#endif // KINETIC_BEAM
+#endif // BEAM_HEATING
+
 PCELL pNextActiveCell;
 CELLPROPERTIES CellProperties;
 
@@ -2195,6 +2206,20 @@ while( pNextActiveCell )
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
 
+#ifdef BEAM_HEATING
+#ifdef KINETIC_BEAM
+#ifdef WRITE_FILE_KINETIC_BEAM
+    fprintf( pBeamFile, "%.8e\n", CellProperties.s[1] );
+    for( j=0; j<N_NT_ENERGY; j++)
+        fprintf( pBeamFile, "\t%.8e", CellProperties.nt_energy[j] );
+    fprintf( pBeamFile, "\n" );
+    for( j=0; j<N_NT_ENERGY; j++)
+        fprintf( pBeamFile, "\t%.8e", CellProperties.F_ex[j] );
+    fprintf( pBeamFile, "\n" );
+#endif // WRITE_FILE_KINETIC_BEAM
+#endif // KINETIC_BEAM
+#endif // BEAM_HEATING
+
     pNextActiveCell = pActiveCell->pGetPointer( RIGHT );
 }
 
@@ -2223,6 +2248,15 @@ fclose( pHStateFile );
 #endif // WRITE_FILE_HSTATE
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef BEAM_HEATING
+#ifdef KINETIC_BEAM
+#ifdef WRITE_FILE_KINETIC_BEAM
+fclose( pBeamFile );
+#endif // WRITE_FILE_KINETIC_BEAM
+#endif // KINETIC_BEAM
+#endif // BEAM_HEATING
+
 
 // Create the .amr file so that the simulation can be continued from the current output if necessary
 
