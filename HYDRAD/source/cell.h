@@ -46,6 +46,7 @@ struct AdaptiveMeshCellProperties {
 
     // Physical quantities
     double n[SPECIES], v[3], T[SPECIES], P[3][SPECIES], TE_KE_P[3][SPECIES], nu_ie, Cs, M;
+    double AF;
 
     // Thermal flux
     double Fc[3][SPECIES];
