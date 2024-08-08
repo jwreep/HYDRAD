@@ -366,6 +366,10 @@ do {
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+                 NewCellProperties[0].AF = ( CellProperties.AF + RightCellProperties.AF ) / 2.0;
+#endif // TIME_VARIABLE_ABUNDANCES
+
 				pNewCell[0] = new CAdaptiveMeshCell( &(NewCellProperties[0]) );
 
 				pLeftCell = pActiveCell->pGetPointer( LEFT );
@@ -616,6 +620,22 @@ do {
 #endif // LINEAR_RESTRICTION
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+                           y[1] = FarLeftCellProperties.AF;
+						y[2] = LeftCellProperties.AF;
+						y[3] = CellProperties.AF;
+						y[4] = RightCellProperties.AF;
+						y[5] = FarRightCellProperties.AF;
+#ifdef LINEAR_RESTRICTION
+                        LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF) );
+                        LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF) );
+#else
+                        FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF), &error );
+                        FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF), &error );
+#endif // LINEAR_RESTRICTION
+
+#endif // TIME_VARIABLE_ABUNDANCES
 		    		}
                     else if( !pFarLeftCell )
                     {
@@ -697,6 +717,20 @@ do {
 #endif // LINEAR_RESTRICTION
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+						y[2] = LeftCellProperties.AF;
+						y[3] = CellProperties.AF;
+						y[4] = RightCellProperties.AF;
+						y[5] = FarRightCellProperties.AF;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF) );
+#else
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF), &error );
+#endif // LINEAR_RESTRICTION
+#endif // TIME_VARIABLE_ABUNDANCES
                     }
                     else if( !pFarRightCell )
                     {
@@ -778,6 +812,20 @@ do {
 #endif // LINEAR_RESTRICTION
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+						y[1] = FarLeftCellProperties.AF;
+						y[2] = LeftCellProperties.AF;
+						y[3] = CellProperties.AF;
+						y[4] = RightCellProperties.AF;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF) );
+#else
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF), &error );
+						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF), &error );
+#endif // LINEAR_RESTRICTION
+#endif // TIME_VARIABLE_ABUNDANCES
                     }
 				}
 				else
@@ -833,6 +881,14 @@ do {
                     LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].rho_e) );
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+                    y[1] = CellProperties.AF;
+                    y[2] = RightCellProperties.AF;
+                    LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF) );
+                    LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF) );
+
+#endif // TIME_VARIABLE_ABUNDANCES
 				}
 
 // ******************************************************************************
@@ -1064,6 +1120,21 @@ do {
 #endif // LINEAR_RESTRICTION
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+						y[1] = FarLeftCellProperties.AF;
+						y[2] = LeftCellProperties.AF;
+						y[3] = CellProperties.AF;
+						y[4] = RightCellProperties.AF;
+						y[5] = FarRightCellProperties.AF;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF) );
+#else
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF), &error );
+#endif // LINEAR_RESTRICTION
+#endif // TIME_VARIABLE_ABUNDANCES
                     }
                     else if( !pFarLeftCell )
                     {
@@ -1145,6 +1216,20 @@ do {
 #endif // LINEAR_RESTRICTION
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+						y[2] = LeftCellProperties.AF;
+						y[3] = CellProperties.AF;
+						y[4] = RightCellProperties.AF;
+						y[5] = FarRightCellProperties.AF;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF) );
+#else
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF), &error );
+#endif // LINEAR_RESTRICTION
+#endif // TIME_VARIABLE_ABUNDANCES
                     }
                     else if( !pFarRightCell )
                     {
@@ -1227,6 +1312,20 @@ do {
 #endif // LINEAR_RESTRICTION
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+						y[1] = FarLeftCellProperties.AF;
+						y[2] = LeftCellProperties.AF;
+						y[3] = CellProperties.AF;
+						y[4] = RightCellProperties.AF;
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF) );
+#else
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF), &error );
+						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF), &error );
+#endif // LINEAR_RESTRICTION
+#endif // TIME_VARIABLE_ABUNDANCES
                     }
 				}
 				else
@@ -1282,6 +1381,13 @@ do {
                     LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].rho_e) );
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+                    y[1] = LeftCellProperties.AF;
+                    y[2] = CellProperties.AF;
+                    LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF) );
+                    LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF) );
+#endif // TIME_VARIABLE_ABUNDANCES
 				}
 
 // ******************************************************************************
@@ -1444,6 +1550,11 @@ void CAdaptiveMesh::EnforceBoundaryConditions( void )
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+	GhostCellProperties[0].AF = CellProperties[1].AF;
+	GhostCellProperties[1].AF = CellProperties[0].AF;
+#endif // TIME_VARIABLE_ABUNDANCES
+
 #else // FORCE_SYMMETRY
 
 	// Code for open right-hand boundary
@@ -1506,6 +1617,12 @@ void CAdaptiveMesh::EnforceBoundaryConditions( void )
 	GhostCellProperties[1].rho_e = GhostCellProperties[1].rho[1] * ( GhostCellProperties[0].rho_e / GhostCellProperties[0].rho[1] );
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+    // Assume that the ghost cells have coronal abundance factors
+    GhostCellProperties[0].AF = CORONAL_ABUNDANCE_FACTOR;
+    GhostCellProperties[1].AF = CORONAL_ABUNDANCE_FACTOR;
+#endif // TIME_VARIABLE_ABUNDANCES
 
 #endif // FORCE_SYMMETRY
 

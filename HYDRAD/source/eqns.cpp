@@ -276,17 +276,19 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
 		// ( GAMMA_MINUS_ONE * ELECTRON_MASS ) / BOLTZMANN_CONSTANT = 4.40066838247E-12
 		if( ( (4.40066838247e-12) * ( CellProperties.TE_KE[1][ELECTRON] / CellProperties.rho_e ) ) <= NLTE_T_FP && !fLeftFPn_H  )
 			fLeftFPn_H = CellProperties.rho[1] / AVERAGE_PARTICLE_MASS;
-	
+
+#ifdef TIME_VARIABLE_ABUNDANCES
          // Set the initial abundance factors to 1.0 (photospheric) for cells in the chromosphere
          if CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE)
          {
-             CellProperties.af = 1.0;
+             CellProperties.AF = 1.0;
          }
          // and set the initial abundance factors to 4.0 (coronal) for cells in the corona
          else
          {
-             CellProperties.af = 4.0;
+             CellProperties.AF = 4.0;
          }
+#endif // TIME_VARIABLE_ABUNDANCES
     
 		pActiveCell->UpdateCellProperties( &CellProperties );
 	
@@ -313,6 +315,7 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
 		if( ( (4.40066838247e-12) * ( CellProperties.TE_KE[1][ELECTRON] / CellProperties.rho_e ) ) <= NLTE_T_FP && !fRightFPn_H )
 			fRightFPn_H = CellProperties.rho[1] / AVERAGE_PARTICLE_MASS;
 
+#ifdef TIME_VARIABLE_ABUNDANCES
          // Set the initial abundance factors to 1.0 (photospheric) for cells in the chromosphere
          if CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE)
          {
@@ -323,6 +326,7 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
          {
              CellProperties.AF = 4.0;
          }
+#endif // TIME_VARIABLE_ABUNDANCES
 
 		pActiveCell->UpdateCellProperties( &CellProperties );
 	

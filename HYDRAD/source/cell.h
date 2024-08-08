@@ -28,6 +28,10 @@
 #define MOMENTUM_TERMS  5		// The number of terms in the momentum conservation equation
 #define ENERGY_TERMS    10		// The number of terms in the energy conservation equations
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+    #define CORONAL_ABUNDANCE_FACTOR 4.0   // The abundance factor (enhancement of low FIP elements) that is "coronal"
+    #define PHOTOSPHERIC_ABUNDANCE_FACTOR 1.0  // The abundance factor for "photospheric"
+#endif // TIME_VARIABLE_ABUNDANCES
 
 // **** ADAPTIVE MESH CELL PROPERTIES ****
 
@@ -46,7 +50,6 @@ struct AdaptiveMeshCellProperties {
 
     // Physical quantities
     double n[SPECIES], v[3], T[SPECIES], P[3][SPECIES], TE_KE_P[3][SPECIES], nu_ie, Cs, M;
-    double AF;
 
     // Thermal flux
     double Fc[3][SPECIES];
@@ -64,6 +67,10 @@ struct AdaptiveMeshCellProperties {
     // The smallest ionisation / recombination time-scale in the current cell
     double atomic_delta_t;
 #endif // NON_EQUILIBRIUM_RADIATION
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+    double AF;
+#endif // TIME_VARIABLE_ABUNDANCES
 
 #ifdef OPTICALLY_THICK_RADIATION
     // The neutral hydrogen population fraction, and the column number and mass densities
