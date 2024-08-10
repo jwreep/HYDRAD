@@ -60,6 +60,10 @@ class CElement {
 
     // Function to open and read the ionisation balance file
     void OpenIonFracFile( char *szIonFracFilename );
+    
+    #ifdef TIME_VARIABLE_ABUNDANCES
+    void OpenFIPFile( char *szFIPFilename );
+    #endif // TIME_VARIABLE_ABUNDANCES
 
     // Functions to calculate the factor phi( n, T ), which is multiplied by n^2 to calculate the radiated energy
     void CalculatePhi( void );

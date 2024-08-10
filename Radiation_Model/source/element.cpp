@@ -293,6 +293,51 @@ for( j=0; j<NumTempxNumDen; j++ )
 fclose( pFile );
 }
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+void CElement::OpenFIPFile( char *szFIPFilename )
+{
+FILE *pFile;
+double fHAb;
+double fTemp;
+int buffer;
+
+// Open the FIP file
+pFile = fopen( szFIPFilename, "r" );
+
+// Get the abundance data for hydrogen
+fscanf( pFile, "%i", &buffer );
+ReadDouble( pFile, &fTemp );
+fHAb = pow( 10.0, fTemp );
+
+// Search for the abundance of the required element
+
+for(;;)
+{
+    // If the atomic number read is the atomic number of the element then calculate the abundance relative to hydrogen
+    if( buffer == Z )
+    {
+        fAbund = pow( 10.0, fTemp ) / fHAb;
+	break;
+    }
+
+    // Get the atomic number of the element
+    fscanf( pFile, "%i", &buffer );
+
+    // If the value read is -1 then break
+    if( buffer == -1 ) break;
+
+    // Get the log_10 abundance of the element relative to H
+    ReadDouble( pFile, &fTemp );
+}
+
+// If the atomic number of the element was not found in the abundance file then set the abundance to zero
+if( buffer == -1 )
+    fAbund = 0.0;
+
+fclose( pFile );
+}
+#endif // TIME_VARIABLE_ABUNDANCES
+
 void CElement::CalculatePhi( void )
 {
 int i, j, NumTempxNumDen, indexTemp, indexDen;

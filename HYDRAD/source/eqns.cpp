@@ -278,15 +278,15 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
 			fLeftFPn_H = CellProperties.rho[1] / AVERAGE_PARTICLE_MASS;
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-         // Set the initial abundance factors to 1.0 (photospheric) for cells in the chromosphere
+         // Set the initial abundance factors to photospheric for cells in the chromosphere
          if CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE)
          {
-             CellProperties.AF = 1.0;
+             CellProperties.AF = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
-         // and set the initial abundance factors to 4.0 (coronal) for cells in the corona
+         // and set the initial abundance factors to coronal for cells above the chromosphere
          else
          {
-             CellProperties.AF = 4.0;
+             CellProperties.AF = CORONAL_ABUNDANCE_FACTOR;
          }
 #endif // TIME_VARIABLE_ABUNDANCES
     
@@ -316,15 +316,15 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
 			fRightFPn_H = CellProperties.rho[1] / AVERAGE_PARTICLE_MASS;
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-         // Set the initial abundance factors to 1.0 (photospheric) for cells in the chromosphere
+         // Set the initial abundance factors to photospheric for cells in the chromosphere
          if CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE)
          {
-             CellProperties.AF = 1.0;
+             CellProperties.AF = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
-         // and set the initial abundance factors to 4.0 (coronal) for cells in the corona
+         // and set the initial abundance factors to coronal for cells above the chromosphere
          else
          {
-             CellProperties.AF = 4.0;
+             CellProperties.AF = CORONAL_ABUNDANCE_FACTOR;
          }
 #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -1114,6 +1114,9 @@ int j;
 					fElement += ((double)j) * pfZ[j];
 
 				fElement *= pRadiation->GetAbundance( piA[i] );
+                 #ifdef TIME_VARIABLE_ABUNDANCES
+                 
+                 #endif // TIME_VARIABLE_ABUNDANCES
 				fSum += fElement;
 			}		
     	}
