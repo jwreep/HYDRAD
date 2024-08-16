@@ -2866,6 +2866,14 @@ int j;
 	pCellProperties->rho_e = BottomCellProperties.rho_e + ( fdne * ELECTRON_MASS );
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+    PCELL pAdjacentCell;
+    // Update the abundance factor here!
+    
+    
+    //pCellProperties->AF = (BottomCellProperties.AF * BottomCellProperties.rho[1] + ) / pCellProperties.rho[1]
+#endif // TIME_VARIABLE_ABUNDANCES
 }
 
 #if defined (OPENMP) || defined (USE_KINETIC_MODEL)
