@@ -273,6 +273,22 @@ if( i == NumElements ) return 0.0;
 return ppElements[i]->GetAbundance();
 }
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+double CRadiation::GetFIP( int iZ )
+{
+int i;
+
+// Find the required element
+for( i=0; i<NumElements; i++ )
+    if( iZ == pZ[i] ) break;
+
+if( i == NumElements ) return 0.0;
+
+return ppElements[i]->GetFIP();
+}
+#endif // TIME_VARIABLE_ABUNDANCES
+
+
 void CRadiation::GetRates( int iZ, int iIon, double flog_10T, double *pfIonRate, double *pfRecRate )
 {
 int i;

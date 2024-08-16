@@ -22,6 +22,11 @@ class CElement {
     // The abundance of the element relative to hydrogen
     double fAbund;
 
+    #ifdef TIME_VARIABLE_ABUNDANCES
+    // The first ionization potential (FIP) of the element
+    double fFIP;
+    #endif // TIME_VARIABLE_ABUNDANCES
+
     // The number of ions and their spectroscopic numbers
     int NumIons, *pSpecNum;
 	
@@ -62,6 +67,7 @@ class CElement {
     void OpenIonFracFile( char *szIonFracFilename );
     
     #ifdef TIME_VARIABLE_ABUNDANCES
+    // Function to open and read the first ionization potential file
     void OpenFIPFile( char *szFIPFilename );
     #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -111,6 +117,11 @@ class CElement {
     // Multiply by the number density squared to obtain the energy radiatied in units of erg cm^-3 s^-1
     double GetEmissivity( int iIon, double flog_10T, double flog_10n, double ni );
     double GetEmissivity( double flog_10T, double flog_10n, double *pni );
+    
+    #ifdef TIME_VARIABLE_ABUNDANCES
+    // Function to return the element FIP
+    double GetFIP( void );
+    #endif // TIME_VARIABLE_ABUNDANCES
 
 };
 

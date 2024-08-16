@@ -740,6 +740,10 @@ int j;
 	fLambda2 = 25.1 + log_fAvgEE;
 #endif // BEAM_HEATING
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+    double fFIP;
+#endif // TIME_VARIABLE_ABUNDANCES
+
 	memset( &CellProperties, 0, sizeof(CELLPROPERTIES) );	// Avoids a warning that variables might be used undefined
 
 	// We need to make T_b^top a time-dependent function, which means finding the foot-point densities at each leg of the loop prior to executing the
@@ -1114,8 +1118,13 @@ int j;
 					fElement += ((double)j) * pfZ[j];
 
 				fElement *= pRadiation->GetAbundance( piA[i] );
+                
                  #ifdef TIME_VARIABLE_ABUNDANCES
-                 
+                 fFIP = pRadiation->GetFIP( piA[i] );
+                 if ( fFIP < LOW_FIP_THRESHOLD && fFIP != 0.0 )
+                 {
+                     fElement *= CellProperties.AF;
+                 }
                  #endif // TIME_VARIABLE_ABUNDANCES
 				fSum += fElement;
 			}		
@@ -1135,6 +1144,15 @@ int j;
 					fElement += ((double)j) * fZ[j];
 
             	fElement *= pRadiation2->GetAbundance( piA[i] );
+                
+                 #ifdef TIME_VARIABLE_ABUNDANCES
+                 fFIP = pRadiation->GetFIP( piA[i] );
+                 if ( fFIP < LOW_FIP_THRESHOLD && fFIP != 0.0 )
+                 {
+                     fElement *= CellProperties.AF;
+                 }
+                 #endif // TIME_VARIABLE_ABUNDANCES
+
             	fSum += fElement;
 			}
     	}

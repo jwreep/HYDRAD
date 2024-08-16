@@ -69,6 +69,11 @@ class CRadiation {
 
     // Function to return the abundance of a specified element
     double GetAbundance( int iZ );
+    
+    #ifdef TIME_VARIABLE_ABUNDANCES
+    // Function to return the first ionization potential of a specified element
+    double GetFIP( int iZ );
+    #endif // TIME_VARIABLE_ABUNDANCES
 
 	// Functions to return the ionization and recombination rates of a particular element and ion, at a specified temperature and density
 	void GetRates( int iZ, int iIon, double flog_10T, double *pfIonRate, double *pfRecRate );
