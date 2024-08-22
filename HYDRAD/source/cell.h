@@ -70,7 +70,7 @@ struct AdaptiveMeshCellProperties {
 #endif // NON_EQUILIBRIUM_RADIATION
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-    double AF;
+    double AF[3], dAFbydt;
 #endif // TIME_VARIABLE_ABUNDANCES
 
 #ifdef OPTICALLY_THICK_RADIATION

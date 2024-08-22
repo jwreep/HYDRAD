@@ -281,12 +281,12 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
          // Set the initial abundance factors to photospheric for cells in the chromosphere
          if CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE)
          {
-             CellProperties.AF = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+             CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
          // and set the initial abundance factors to coronal for cells above the chromosphere
          else
          {
-             CellProperties.AF = CORONAL_ABUNDANCE_FACTOR;
+             CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
          }
 #endif // TIME_VARIABLE_ABUNDANCES
     
@@ -319,12 +319,12 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
          // Set the initial abundance factors to photospheric for cells in the chromosphere
          if CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE)
          {
-             CellProperties.AF = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+             CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
          // and set the initial abundance factors to coronal for cells above the chromosphere
          else
          {
-             CellProperties.AF = CORONAL_ABUNDANCE_FACTOR;
+             CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
          }
 #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -1123,7 +1123,7 @@ int j;
                  fFIP = pRadiation->GetFIP( piA[i] );
                  if ( fFIP < LOW_FIP_THRESHOLD && fFIP != 0.0 )
                  {
-                     fElement *= CellProperties.AF;
+                     fElement *= CellProperties.AF[1];
                  }
                  #endif // TIME_VARIABLE_ABUNDANCES
 				fSum += fElement;
@@ -1149,7 +1149,7 @@ int j;
                  fFIP = pRadiation->GetFIP( piA[i] );
                  if ( fFIP < LOW_FIP_THRESHOLD && fFIP != 0.0 )
                  {
-                     fElement *= CellProperties.AF;
+                     fElement *= CellProperties.AF[1];
                  }
                  #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -1722,6 +1722,52 @@ int j;
 			}
 	        
 			LeftCellProperties.rho[2] = CellProperties.rho[0];
+            
+            #ifdef TIME_VARIABLE_ABUNDANCES
+            // CALCULATE THE ABUNDANCE FACTOR
+	 
+	        x[1] = FarLeftCellProperties.s[1];
+			x[2] = LeftCellProperties.s[1];
+			y[1] = FarLeftCellProperties.AF[1];
+			y[2] = LeftCellProperties.AF[1];
+#ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+			y[1] *= fCrossSection[0];
+			y[2] *= fCrossSection[1];
+#endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+			LinearFit( x, y, CellProperties.s[0], &Q1 );
+
+			x[1] = LeftCellProperties.s[1];
+			x[2] = CellProperties.s[1];
+			y[1] = LeftCellProperties.AF[1];
+			y[2] = CellProperties.AF[1];
+#ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+			y[1] *= fCrossSection[1];
+			y[2] *= fCrossSection[2];
+#endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+			LinearFit( x, y, CellProperties.s[0], &Q2 );
+
+	        Q3 = y[1];
+
+			if( y[2] <= y[1] )
+			{
+		    	QT = max( Q1, Q2 );
+			    if( Q3 < QT )
+		    	    CellProperties.AF[0] = Q3;
+	    		else
+	        		CellProperties.AF[0] = QT;
+			}
+			else
+			{
+	    		QT = min( Q1, Q2 );
+		    	if( Q3 > QT )
+		        	CellProperties.AF[0] = Q3;
+	    		else
+	        		CellProperties.AF[0] = QT;
+			}
+	        
+			LeftCellProperties.AF[2] = CellProperties.AF[0];
+           
+            #endif // TIME_VARIABLE_ABUNDANCES
 		
 			// CALCULATE THE MOMENTUM
 
@@ -1858,6 +1904,53 @@ int j;
 
 			LeftCellProperties.rho[2] = CellProperties.rho[0];
 		
+            #ifdef TIME_VARIABLE_ABUNDANCES
+            // CALCULATE THE ABUNDANCE FACTOR
+	        
+	        x[1] = CellProperties.s[1];
+			x[2] = RightCellProperties.s[1];
+			y[1] = CellProperties.AF[1];
+			y[2] = RightCellProperties.AF[1];
+#ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+			y[1] *= fCrossSection[2];
+			y[2] *= fCrossSection[3];
+#endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+			LinearFit( x, y, CellProperties.s[0], &Q1 );
+
+			x[1] = LeftCellProperties.s[1];
+			x[2] = CellProperties.s[1];
+			y[1] = LeftCellProperties.AF[1];
+			y[2] = CellProperties.AF[1];
+#ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+			y[1] *= fCrossSection[1];
+			y[2] *= fCrossSection[2];
+#endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+			LinearFit( x, y, CellProperties.s[0], &Q2 );
+
+	        Q3 = y[2];
+
+			// Note: The flow is in the opposite direction and so the conditional is switched
+			if( y[1] <= y[2] )
+			{
+    	        QT = max( Q1, Q2 );
+	    		if( Q3 < QT )
+	        		CellProperties.AF[0] = Q3;
+	    		else
+	        		CellProperties.AF[0] = QT;
+			}
+			else
+			{
+	    		QT = min( Q1, Q2 );
+		    	if( Q3 > QT )
+		        	CellProperties.AF[0] = Q3;
+	    		else
+	        		CellProperties.AF[0] = QT;
+			}
+
+			LeftCellProperties.AF[2] = CellProperties.AF[0];
+            
+            #endif // TIME_VARIABLE_ABUNDANCES
+        
 			// CALCULATE THE MOMENTUM
 		
 			x[1] = CellProperties.s[1];
@@ -2356,6 +2449,19 @@ int j;
 
 		// Calculate the time derivative
 	    CellProperties.drhobydt = CellProperties.rho_term[0];
+        
+#ifdef TIME_VARIABLE_ABUNDANCES
+        LowerValue = CellProperties.AF[0] * CellProperties.v[0];
+        UpperValue = CellProperties.AF[2] * CellProperties.v[2];
+
+    // Calculate the time derivative of the abundance factor
+    #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+        CellProperties.dAFbydt = - ( UpperValue - LowerValue ) / fCellVolume;
+    #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
+        CellProperties.dAFbydt = - ( UpperValue - LowerValue ) / CellProperties.cell_width;
+    #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+    
+#endif // TIME_VARIABLE_ABUNDANCES
 
 // *****************************************************************************
 // *                                                                           *
@@ -2829,6 +2935,11 @@ pActiveCell->GetCellProperties( &CellProperties );
 	pNewCellProperties->rho_e = CellProperties.rho_e + ( fdne * ELECTRON_MASS );
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+    // Update the abundance factor here!
+    pNewCellProperties->AF[1] = CellProperties.AF[1] +  ( delta_t * pCellProperties.dAFbydt );
+#endif // TIME_VARIABLE_ABUNDANCES
 }
 
 void CEquations::Full_Time_Step( PCELLPROPERTIES pCellProperties, double delta_t )
@@ -2868,11 +2979,8 @@ int j;
 #endif // OPTICALLY_THICK_RADIATION
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-    PCELL pAdjacentCell;
     // Update the abundance factor here!
-    
-    
-    //pCellProperties->AF = (BottomCellProperties.AF * BottomCellProperties.rho[1] + ) / pCellProperties.rho[1]
+    pCellProperties->AF[1] = BottomCellProperties.AF[1] +  ( delta_t * pCellProperties->dAFbydt );
 #endif // TIME_VARIABLE_ABUNDANCES
 }
 
