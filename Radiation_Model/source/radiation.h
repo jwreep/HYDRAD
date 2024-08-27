@@ -96,6 +96,9 @@ class CRadiation {
     double GetRadiation( int iZ, int iIon, double flog_10T, double fne, double fnH );
     double GetRadiation( int iZ, double flog_10T, double fne, double fnH );
     double GetRadiation( double flog_10T, double fne, double fnH );
+    #ifdef TIME_VARIABLE_ABUNDANCES
+    double GetRadiation( double flog_10T, double fne, double fnH, double AF );
+    #endif // TIME_VARIABLE_ABUNDANCES
 
     // Functions to calculate the rate of change with respect to time of the fractional populations of the ions and the characteristic time-scale
     void Getdnibydt( int iZ, double flog_10T, double flog_10n, double *pni0, double *pni1, double *pni2, double *pni3, double *pni4, double *s, double *s_pos, double *pv, double delta_s, double *pdnibydt, double *pTimeScale );
@@ -105,10 +108,16 @@ class CRadiation {
     double GetRadiation( int iZ, int iIon, double flog_10T, double fne, double fnH, double ni );
     double GetRadiation( int iZ, double flog_10T, double fne, double fnH, double *pni );
     double GetRadiation( double flog_10T, double fne, double fnH, double **ppni );
-	
+    #ifdef TIME_VARIABLE_ABUNDANCES
+    double GetRadiation( double flog_10T, double fne, double fnH, double **ppni, double AF );
+    #endif // TIME_VARIABLE_ABUNDANCES
+
     // Functions to calculate energy radiated based upon power-laws
     double GetPowerLawRad( double flog_10T, double fne, double fnH );
     double GetFreeFreeRad( double flog_10T, double fne, double fnH );
+    #ifdef TIME_VARIABLE_ABUNDANCES
+    double GetFreeFreeRad( double flog_10T, double fne, double fnH, double AF );
+    #endif // TIME_VARIABLE_ABUNDANCES
 	
 };
 

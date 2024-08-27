@@ -567,6 +567,37 @@ return ( fne * fnH ) * result;
 // NOTE: free-free radiation is NOT added here
 }
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+double CRadiation::GetRadiation( double flog_10T, double fne, double fnH, double AF )
+{
+double fEmiss = 0.0;
+int i;
+
+// Find the required element
+for( i=0; i<NumElements; i++ )
+{
+    if( ppElements[i]->GetFIP() <= LOW_FIP_THRESHOLD )
+    {
+        fEmiss += (AF * ppElements[i]->GetEmissivity( flog_10T, log10(fne) ) );
+    }
+    else
+    {
+        fEmiss += ppElements[i]->GetEmissivity( flog_10T, log10(fne) );
+    }
+}
+
+if( fne > MAX_OPTICALLY_THIN_DENSITY )
+{
+    fne = MAX_OPTICALLY_THIN_DENSITY;
+    if( fnH > fne )
+	fnH = fne;
+}
+
+return ( fne * fnH ) * fEmiss;
+// NOTE: free-free radiation is NOT added here
+}
+#endif // TIME_VARIABLE_ABUNDANCES
+
 void CRadiation::Getdnibydt( int iZ, double flog_10T, double flog_10n, double *pni0, double *pni1, double *pni2, double *pni3, double *pni4, double *s, double *s_pos, double *pv, double delta_s, double *pdnibydt, double *pTimeScale )
 {
 int i;
@@ -664,6 +695,36 @@ return ( fne * fnH ) * fEmiss;
 // NOTE: free-free radiation is NOT added here
 }
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+double CRadiation::GetRadiation( double flog_10T, double fne, double fnH, double **ppni, double AF )
+{
+double fEmiss = 0.0;
+int i;
+
+for( i=0; i<NumElements; i++ )
+{
+    if( ppElements[i]->GetFIP() <= LOW_FIP_THRESHOLD )
+    {
+        fEmiss += (AF * ppElements[i]->GetEmissivity( flog_10T, log10(fne), ppni[i] ));
+    }
+    else
+    {
+        fEmiss += ppElements[i]->GetEmissivity( flog_10T, log10(fne), ppni[i] );
+    }
+}
+
+if( fne > MAX_OPTICALLY_THIN_DENSITY )
+{
+    fne = MAX_OPTICALLY_THIN_DENSITY;
+    if( fnH > fne )
+	fnH = fne;
+}
+
+return ( fne * fnH ) * fEmiss;
+// NOTE: free-free radiation is NOT added here
+}
+#endif // TIME_VARIABLE_ABUNDANCES
+
 double CRadiation::GetPowerLawRad( double flog_10T, double fne, double fnH )
 {
 #ifdef USE_RADIATION_LOOKUP_TABLE
@@ -744,6 +805,27 @@ if( fne > MAX_OPTICALLY_THIN_DENSITY )
 
 return ( fne * fnH ) * (1.96e-27) * pow( 10.0, (0.5*flog_10T) );
 }
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+// NOT YET EDITED OR BEING USED -- NEED TO FIGURE OUT HOW TO DEAL WITH GAUNT FACTOR
+    // SEE THE CODE IN FIASCO FOR HOW TO CALCULATE THE LOSSES INDEPENDENT OF ABUNDANCE
+
+double CRadiation::GetFreeFreeRad( double flog_10T, double fne, double fnH, double AF )
+{
+// Calculate the free-free emission due to thermal bremsstralung for a low-density and fully ionised plasma
+// The previous formulation used here was taken from Mason & Monsignori Fossi (1994, Astron. Astrophys. Rev., 6, 123) where (1.96e-27) is replaced with (2.40e-27)
+// The current formulation is taken from the power-law fit for log_10 T > 7.63
+
+if( fne > MAX_OPTICALLY_THIN_DENSITY )
+{
+    fne = MAX_OPTICALLY_THIN_DENSITY;
+    if( fnH > fne )
+	fnH = fne;
+}
+
+return ( fne * fnH ) * (1.96e-27) * pow( 10.0, (0.5*flog_10T) );
+}
+#endif // TIME_VARIABLE_ABUNDANCES
 
 #ifdef USE_RADIATION_LOOKUP_TABLE
 double CRadiation::GetRadiationFromLookupTable( double flog_10T, double fne, double fnH )
