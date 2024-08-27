@@ -2950,7 +2950,7 @@ pActiveCell->GetCellProperties( &CellProperties );
 
 #ifdef TIME_VARIABLE_ABUNDANCES
     // Update the abundance factor here!
-    pNewCellProperties->AF[1] = CellProperties.AF[1] +  ( delta_t * pCellProperties.dAFbydt );
+    pNewCellProperties->AF[1] = CellProperties.AF[1] +  ( delta_t * CellProperties.dAFbydt );
 #endif // TIME_VARIABLE_ABUNDANCES
 }
 

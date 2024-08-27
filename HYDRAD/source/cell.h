@@ -28,12 +28,6 @@
 #define MOMENTUM_TERMS  5		// The number of terms in the momentum conservation equation
 #define ENERGY_TERMS    10		// The number of terms in the energy conservation equations
 
-#ifdef TIME_VARIABLE_ABUNDANCES
-    #define CORONAL_ABUNDANCE_FACTOR 4.0   // The abundance factor (enhancement of low FIP elements) that is "coronal"
-    #define PHOTOSPHERIC_ABUNDANCE_FACTOR 1.0  // The abundance factor for "photospheric"
-    #define LOW_FIP_THRESHOLD 10.0  // The threshold in eV below which elements are considered "low FIP"
-#endif // TIME_VARIABLE_ABUNDANCES
-
 // **** ADAPTIVE MESH CELL PROPERTIES ****
 
 // Define the adaptive mesh cell properties structure

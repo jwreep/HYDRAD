@@ -42,10 +42,8 @@ OpenRatesFile( szRatesFilename );
 OpenIonFracFile( szIonFracFilename );
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-char *szFIPFilename;
 // TODO: Generalize to allow other files to be used
-sprintf( szFIPFilename, "Radiation_Model/atomic_data/FIP/%s.fip", "chianti" );
-OpenFIPFile( szFIPFilename );
+OpenFIPFile("Radiation_Model/atomic_data/FIP/chianti.fip");
 #endif // TIME_VARIABLE_ABUNDANCES
 
 // Calculate phi for each ion as a function of temperature and density
@@ -323,7 +321,7 @@ for(;;)
     // Get the FIP of the element in eV
     ReadDouble( pFile, &fTemp );
 
-    // If the atomic number read is the atomic number of the element then calculate the abundance relative to hydrogen
+    // If the atomic number read is the atomic number of the element then store the FIP
     if( buffer == Z )
     {
         fFIP = fTemp;
