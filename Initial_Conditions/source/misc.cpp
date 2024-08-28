@@ -105,16 +105,17 @@ fPhi1 = ( _PI_ / 180.0 ) * Inc;
 	r = ( SOLAR_RADIUS + s );
 	result = - SOLAR_SURFACE_GRAVITY * ( SOLAR_RADIUS_SQUARED / ( r * r ) ) * cos( fPhi1 );
 #else // OPEN_FIELD
-	double fTheta, fHeight, fPhi2;
+	double fTheta, fHeight, fPhi2, fRatio;
 
 	fTheta = ( _PI_ * s ) / Lfull;
-	fHeight = ( Lfull / _PI_ ) * sin( fTheta );
+	fHeight = ( Lfull / _PI_ ) * sin( fTheta ) * cos( fPhi1 );
+    fRatio = Lfull / ( _PI_ * SOLAR_RADIUS ); 
 
 	// Now allow for the possibility of loop inclination away from the perpendicular
 	fPhi2 = atan( ( fHeight * tan( fPhi1 ) ) / ( SOLAR_RADIUS + fHeight ) );
 	r = ( SOLAR_RADIUS + fHeight ) / cos( fPhi2 );
 
-	result = - SOLAR_SURFACE_GRAVITY * ( SOLAR_RADIUS_SQUARED / ( r * r ) ) * cos( fTheta ) * cos( fPhi1 );
+	result = - SOLAR_SURFACE_GRAVITY * ( SOLAR_RADIUS_SQUARED / ( r * r ) ) * cos( fTheta ) * (cos( fPhi1 ) + fRatio * sin( fTheta )) / sqrt(1.0 + 2.0 * fRatio * cos( fPhi1 ) * sin( fTheta ) + pow(fRatio * sin( fTheta ), 2.0) );
 #endif // OPEN_FIELD
 
 return result;
