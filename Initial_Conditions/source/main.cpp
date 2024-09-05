@@ -676,7 +676,7 @@ int AddChromospheres( int iTRplusCoronaplusTRSteps, double *s, double *P, double
 {
 double GetVALTemperature( double s, int iVALTemperatureDP, double **ppVALTemperature );
 
-double ds, max_ds;
+double ds, max_ds, fHeight, fTheta, fPhi;
 double P2, T2, nT, nH2;	// ne2
 double dPbyds;
 double FracDiff;
@@ -706,6 +706,8 @@ POPTICALLYTHICKION pHI;
 pHI = new COpticallyThickIon( 1, (char *)"h_1", (char *)"Radiation_Model/atomic_data/abundances/asplund.ab" );
 
 max_ds = Params.Lfull / MIN_CELLS;
+
+fPhi = ( _PI_ / 180.0 ) * Params.Inc;
 
 // Left-hand chromosphere
 
@@ -741,7 +743,11 @@ for( ;; ) {
         dPbyds = CalcdPbyds( s[iStep], nH[iStep], Params.Lfull, pGravity );
 
         P2 = P[iStep] + ( dPbyds * (ds/2.0) );
-        T2 = GetVALTemperature( s[iStep]+(ds/2.0), iVALTemperatureDP, ppVALTemperature );
+        
+        fTheta = ( _PI_ * (s[iStep]+(ds/2.0)) ) / Params.Lfull;
+        fHeight = ( Params.Lfull / _PI_ ) * sin( fTheta ) * cos( fPhi );
+        
+        T2 = GetVALTemperature( fHeight, iVALTemperatureDP, ppVALTemperature );
         nT = P2 / ( BOLTZMANN_CONSTANT * T2 );
         nH2 = ( 1.0 / ( 1.0 + ( 1.0 - pHI->GetIonFrac( log10(T2) ) ) ) ) * nT;
         // ne2 = nT - ( ( 1.0 - 1.44e-4 ) * nH2 );
@@ -771,7 +777,10 @@ for( ;; ) {
     s[iStep-1] = s[iStep] + ds;
     if( s[iStep-1] < 0.0 ) break;
 
-    T[iStep-1] = GetVALTemperature( s[iStep-1], iVALTemperatureDP, ppVALTemperature );
+    fTheta = ( _PI_ * (s[iStep-1]) ) / Params.Lfull;
+    fHeight = ( Params.Lfull / _PI_ ) * sin( fTheta ) * cos( fPhi );
+
+    T[iStep-1] = GetVALTemperature( fHeight, iVALTemperatureDP, ppVALTemperature );
     nT = P[iStep-1] / ( BOLTZMANN_CONSTANT * T[iStep-1] );
     nH[iStep-1] = ( 1.0 / ( 1.0 + ( 1.0 - pHI->GetIonFrac( log10(T[iStep-1]) ) ) ) ) * nT;
     ne[iStep-1] = nT - ( ( 1.0 - 1.44e-4 ) * nH[iStep-1] );
@@ -819,7 +828,11 @@ for( ;; ) {
         dPbyds = CalcdPbyds( s[iStep], nH[iStep], Params.Lfull, pGravity );
 
         P2 = P[iStep] + ( dPbyds * (ds/2.0) );
-        T2 = GetVALTemperature( Params.Lfull - ( s[iStep]+(ds/2.0) ), iVALTemperatureDP, ppVALTemperature );
+        
+        fTheta = ( _PI_ * (Params.Lfull - ( s[iStep]+(ds/2.0)) ) ) / Params.Lfull;
+        fHeight = ( Params.Lfull / _PI_ ) * sin( fTheta ) * cos( fPhi );
+
+        T2 = GetVALTemperature( fHeight, iVALTemperatureDP, ppVALTemperature );
         nT = P2 / ( BOLTZMANN_CONSTANT * T2 );
         nH2 = ( 1.0 / ( 1.0 + ( 1.0 - pHI->GetIonFrac( log10(T2) ) ) ) ) * nT;
         // ne2 = nT - ( ( 1.0 - 1.44e-4 ) * nH2 );
@@ -849,7 +862,10 @@ for( ;; ) {
     s[iStep+1] = s[iStep] + ds;
     if( s[iStep+1] > Params.Lfull ) break;
 
-    T[iStep+1] = GetVALTemperature( Params.Lfull - s[iStep+1], iVALTemperatureDP, ppVALTemperature );
+    fTheta = ( _PI_ * (Params.Lfull - s[iStep+1]) ) / Params.Lfull;
+    fHeight = ( Params.Lfull / _PI_ ) * sin( fTheta ) * cos( fPhi );
+
+    T[iStep+1] = GetVALTemperature( fHeight, iVALTemperatureDP, ppVALTemperature );
     nT = P[iStep+1] / ( BOLTZMANN_CONSTANT * T[iStep+1] );
     nH[iStep+1] = ( 1.0 / ( 1.0 + ( 1.0 - pHI->GetIonFrac( log10(T[iStep+1]) ) ) ) ) * nT;
     ne[iStep+1] = nT - ( ( 1.0 - 1.44e-4 ) * nH[iStep+1] );
