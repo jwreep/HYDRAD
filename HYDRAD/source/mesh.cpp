@@ -2008,12 +2008,14 @@ sprintf( szTermsFilename, "Results/profile%i.trm", iFileNumber );
 pTermsFile = fopen( szTermsFilename, "w" );
 #endif // WRITE_FILE_TERMS
 
+#ifdef TIME_VARIABLE_ABUNDANCES
 #ifdef WRITE_FILE_ABUNDANCE_FACTOR
 FILE *pAbundFile;
 char szAbundFilename[256];
 sprintf( szAbundFilename, "Results/profile%i.abd", iFileNumber );
-pScaleFile = fopen( szAbundFilename, "w" );
+pAbundFile = fopen( szAbundFilename, "w" );
 #endif // WRITE_FILE_ABUNDANCE_FACTOR
+#endif // TIME_VARIABLE_ABUNDANCES
 
 #ifdef OPTICALLY_THICK_RADIATION
 #ifdef NLTE_CHROMOSPHERE
@@ -2109,10 +2111,13 @@ while( pNextActiveCell )
     }
 #endif // WRITE_FILE_TERMS
 
+#ifdef TIME_VARIABLE_ABUNDANCES
 #ifdef WRITE_FILE_ABUNDANCE_FACTOR
     fprintf( pAbundFile, "%.8e", CellProperties.s[1] );
-    fprintf( pAbundFile, "%.8e", CellProperties.AF[1] );
+    fprintf( pAbundFile, "\t%.8e", CellProperties.AF[1] );
+    fprintf( pAbundFile, "\n" );
 #endif // WRITE_FILE_ABUNDANCE_FACTOR
+#endif // TIME_VARIABLE_ABUNDANCES
 
 #ifdef OPTICALLY_THICK_RADIATION
 #ifdef NLTE_CHROMOSPHERE
@@ -2146,9 +2151,11 @@ fclose( pScaleFile );
 fclose( pTermsFile );
 #endif // WRITE_FILE_TERMS
 
+#ifdef TIME_VARIABLE_ABUNDANCES
 #ifdef WRITE_FILE_ABUNDANCE_FACTOR
 fclose( pAbundFile );
 #endif // WRITE_FILE_ABUNDANCE_FACTOR
+#endif // TIME_VARIABLE_ABUNDANCES
 
 #ifdef OPTICALLY_THICK_RADIATION
 #ifdef NLTE_CHROMOSPHERE

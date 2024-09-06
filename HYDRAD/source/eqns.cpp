@@ -765,7 +765,7 @@ int j;
 		// ( GAMMA_MINUS_ONE * ELECTRON_MASS ) / BOLTZMANN_CONSTANT = 4.40066838247E-12
 		if( ( (4.40066838247e-12) * ( CellProperties.TE_KE[1][ELECTRON] / CellProperties.rho_e ) ) <= NLTE_T_FP && !fLeftFPn_H  )
 			fLeftFPn_H = CellProperties.rho[1] / AVERAGE_PARTICLE_MASS;
-	
+    
 		pActiveCell->UpdateCellProperties( &CellProperties );
 		pNextActiveCell = pActiveCell->pGetPointer( LEFT );
 	}
@@ -1053,6 +1053,25 @@ int j;
     	term2 = 0.5 * CellProperties.v[1] * CellProperties.v[1];
     	// GAMMA_MINUS_ONE / BOLTZMANN_CONSTANT = 4.830917874e15
     	CellProperties.T[HYDROGEN] = (4.830917874e15) * AVERAGE_PARTICLE_MASS * ( term1 - term2 );
+
+        #ifdef TIME_VARIABLE_ABUNDANCES
+        if( CellProperties.AF[1] <= 0.0 ) 
+        {   
+            /* Initialize the abundance factor in cells at time zero, 
+             * and anywhere that it somehow becomes less than zero 
+             * (i.e. catch non-physical values).  It should be strictly greater 
+             * than zero at all times and positions.
+             */
+            if( CellProperties.T[HYDROGEN] < OPTICALLY_THICK_TEMPERATURE )
+            {
+                CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+            }
+            else
+            {
+                CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
+            }
+        }
+        #endif // TIME_VARIABLE_ABUNDANCES
 
 #ifdef OPTICALLY_THICK_RADIATION
 #ifdef NLTE_CHROMOSPHERE
