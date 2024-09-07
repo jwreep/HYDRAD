@@ -1749,20 +1749,12 @@ int j;
 			x[2] = LeftCellProperties.s[1];
 			y[1] = FarLeftCellProperties.AF[1];
 			y[2] = LeftCellProperties.AF[1];
-#ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
-			y[1] *= fCrossSection[0];
-			y[2] *= fCrossSection[1];
-#endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
 			LinearFit( x, y, CellProperties.s[0], &Q1 );
 
 			x[1] = LeftCellProperties.s[1];
 			x[2] = CellProperties.s[1];
 			y[1] = LeftCellProperties.AF[1];
 			y[2] = CellProperties.AF[1];
-#ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
-			y[1] *= fCrossSection[1];
-			y[2] *= fCrossSection[2];
-#endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
 			LinearFit( x, y, CellProperties.s[0], &Q2 );
 
 	        Q3 = y[1];
@@ -1930,20 +1922,12 @@ int j;
 			x[2] = RightCellProperties.s[1];
 			y[1] = CellProperties.AF[1];
 			y[2] = RightCellProperties.AF[1];
-#ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
-			y[1] *= fCrossSection[2];
-			y[2] *= fCrossSection[3];
-#endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
 			LinearFit( x, y, CellProperties.s[0], &Q1 );
 
 			x[1] = LeftCellProperties.s[1];
 			x[2] = CellProperties.s[1];
 			y[1] = LeftCellProperties.AF[1];
 			y[2] = CellProperties.AF[1];
-#ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
-			y[1] *= fCrossSection[1];
-			y[2] *= fCrossSection[2];
-#endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
 			LinearFit( x, y, CellProperties.s[0], &Q2 );
 
 	        Q3 = y[2];
@@ -2470,15 +2454,12 @@ int j;
 	    CellProperties.drhobydt = CellProperties.rho_term[0];
         
 #ifdef TIME_VARIABLE_ABUNDANCES
-        LowerValue = CellProperties.AF[0] * CellProperties.v[0];
-        UpperValue = CellProperties.AF[2] * CellProperties.v[2];
+        LowerValue = CellProperties.AF[0];
+        UpperValue = CellProperties.AF[2];
 
     // Calculate the time derivative of the abundance factor
-    #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
-        CellProperties.dAFbydt = - ( UpperValue - LowerValue ) / fCellVolume;
-    #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
-        CellProperties.dAFbydt = - ( UpperValue - LowerValue ) / CellProperties.cell_width;
-    #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+        // Does not depend on the cross-sectional area!
+    CellProperties.dAFbydt = - CellProperties.v[1] * ( UpperValue - LowerValue ) / CellProperties.cell_width;
     
 #endif // TIME_VARIABLE_ABUNDANCES
 
