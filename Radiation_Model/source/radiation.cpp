@@ -815,10 +815,10 @@ return ( fne * fnH ) * (1.96e-27) * pow( 10.0, (0.5*flog_10T) );
 double CRadiation::GetFreeFreeRad( double flog_10T, double fne, double fnH, double AF )
 {
 
-/* The total free-free radiative loss is given by integrating the emissivity over 
- * all wavelengths.  The total losses per unit emission measure is then given by
- * Equation 18 of Sutherland et al 1998 (MNRAS, 300, 321).  The prefactor is defined in 
- * Equation 19, with a value of 1.42555669e-27 cm^5 g K^-1/2 s^3). 
+// The total free-free radiative loss is given by integrating the emissivity over 
+// all wavelengths.  The total losses per unit emission measure is then given by
+// Equation 18 of Sutherland et al 1998 (MNRAS, 300, 321).  The prefactor is defined in 
+// Equation 19, with a value of 1.42555669e-27 cm^5 g K^-1/2 s^3). 
  
 
 double gaunt_factor;
