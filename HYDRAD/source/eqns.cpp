@@ -1062,7 +1062,11 @@ int j;
              * (i.e. catch non-physical values).  It should be strictly greater 
              * than zero at all times and positions.
              */
+            #ifdef OPTICALLY_THICK_RADIATION
             if( CellProperties.T[HYDROGEN] < OPTICALLY_THICK_TEMPERATURE )
+            #else // OPTICALLY_THICK_RADIATION
+            if( CellProperties.T[HYDROGEN] < 3.0E4 )
+            #endif // OPTICALLY_THICK_RADIATION
             {
                 CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
             }
