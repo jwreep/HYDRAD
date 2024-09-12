@@ -115,9 +115,6 @@ class CRadiation {
     // Functions to calculate energy radiated based upon power-laws
     double GetPowerLawRad( double flog_10T, double fne, double fnH );
     double GetFreeFreeRad( double flog_10T, double fne, double fnH );
-    #ifdef TIME_VARIABLE_ABUNDANCES
-    double GetFreeFreeRad( double flog_10T, double fne, double fnH, double AF );
-    #endif // TIME_VARIABLE_ABUNDANCES
 	
 };
 

@@ -806,38 +806,6 @@ if( fne > MAX_OPTICALLY_THIN_DENSITY )
 return ( fne * fnH ) * (1.96e-27) * pow( 10.0, (0.5*flog_10T) );
 }
 
-/*#ifdef TIME_VARIABLE_ABUNDANCES
-// NOT YET EDITED OR BEING USED -- NEED TO FIGURE OUT HOW TO DEAL WITH GAUNT FACTOR
-    // SEE THE CODE IN FIASCO FOR HOW TO CALCULATE THE LOSSES INDEPENDENT OF ABUNDANCE
-    // MAYBE MAKES LITTLE DIFFERENCE -- THE EMISSIVITY IS DOMINATED BY H AND HE, SO 
-    // HOW MUCH DOES AF(T) REALLY CHANGE THE OUTPUT?
-
-double CRadiation::GetFreeFreeRad( double flog_10T, double fne, double fnH, double AF )
-{
-
-// The total free-free radiative loss is given by integrating the emissivity over 
-// all wavelengths.  The total losses per unit emission measure is then given by
-// Equation 18 of Sutherland et al 1998 (MNRAS, 300, 321).  The prefactor is defined in 
-// Equation 19, with a value of 1.42555669e-27 cm^5 g K^-1/2 s^3). 
- 
-
-double gaunt_factor;
-
-if( fne > MAX_OPTICALLY_THIN_DENSITY )
-{
-    fne = MAX_OPTICALLY_THIN_DENSITY;
-    if( fnH > fne )
-	fnH = fne;
-}
-
-gaunt_factor = ;
-charge_state = ;
-
-return ( fne * fnH ) * (1.42555669e-27) * pow( 10.0, (0.5*flog_10T) ) * gaunt_factor * charge_state * charge_state;
-}
-#endif // TIME_VARIABLE_ABUNDANCES
-*/
-
 #ifdef USE_RADIATION_LOOKUP_TABLE
 double CRadiation::GetRadiationFromLookupTable( double flog_10T, double fne, double fnH )
 {
