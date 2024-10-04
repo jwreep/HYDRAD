@@ -1,0 +1,36 @@
+ 1  12.00
+ 2  10.93
+ 3   1.05
+ 4   1.38
+ 5   2.70
+ 6   8.03
+ 7   7.43
+ 8   8.29
+ 9   4.16
+10   7.53
+11   5.84
+12   7.20
+13   6.05
+14   7.11
+15   5.01
+16   6.72
+17   5.10
+18   6.00
+19   4.63
+20   5.94
+21   2.75
+22   4.55
+23   3.53
+24   5.24
+25   5.03
+26   7.10
+27   4.59
+28   5.82
+29   3.79
+30   4.16
+-1
+%filename: gt_muscae.ab
+%abundance: Abundances for the star GT Muscae, assuming a metallicity of 0.4 * solar.  We have modified the Asplund et al 2009 solar photospheric dataset by reducing the abundances of all elements heavier than C.
+%
+% Jeffrey Reep, October 2024
+-1
