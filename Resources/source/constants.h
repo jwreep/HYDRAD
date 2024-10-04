@@ -38,9 +38,9 @@
 #define ELECTRON_CHARGE				4.80e-10                            // (esu)
 #define ELECTRON_CHARGE_POWER_4			5.308416e-38                        // (esu^4)
 
-#define SOLAR_SURFACE_GRAVITY 			1995.2                               // (cm) (s^-2)
-#define SOLAR_RADIUS          			2.575e11                             // (cm)
-#define SOLAR_RADIUS_SQUARED			6.631e22                             // (cm^2)
+#define SOLAR_SURFACE_GRAVITY 			77.6                               // (cm) (s^-2)
+#define SOLAR_RADIUS          			1.15e12                             // (cm)
+#define SOLAR_RADIUS_SQUARED			1.33e24                             // (cm^2)
 
 #define LARGEST_DOUBLE				1e308                               // The largest number a double precision type can represent
 #define SMALLEST_DOUBLE                         1e-300                              // The smallest number a double precision type can represent
