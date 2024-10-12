@@ -255,6 +255,10 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
 	fLambda2 = 25.1 + log_fAvgEE;
 #endif // BEAM_HEATING
 
+#if defined(TIME_VARIABLE_ABUNDANCES) && defined(PONDEROMOTIVE)
+    bool boundary_cell = true;
+#endif // TIME_VARIABLE_ABUNDANCES && PONDEROMOTIVE
+
 	memset( &CellProperties, 0, sizeof(CELLPROPERTIES) );	// Avoids a warning that variables might be used undefined
 
 	// We need to make T_b^top a time-dependent function, which means finding the foot-point densities at each leg of the loop prior to executing the
@@ -288,6 +292,13 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
          {
              CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
          }
+         #ifdef PONDEROMOTIVE
+            if( boundary_cell && CellProperties.s[1] >= INJECTION_HEIGHT )
+            {
+                CellProperties.elsasser_I[0] = WAVE_AMPLITUDE;
+                boundary_cell = false;  // Only set the boundary condition in a single cell
+            }
+         #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
     
 		pActiveCell->UpdateCellProperties( &CellProperties );

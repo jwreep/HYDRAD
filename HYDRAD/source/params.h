@@ -32,6 +32,13 @@
 #include "../../Kinetic_Model/source/kinetic.h"
 #endif // USE_KINETIC_MODEL
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+#ifdef PONDEROMOTIVE
+#define INJECTION_HEIGHT 1.0e8 // cm
+#define WAVE_AMPLITUDE 1.0e5   // cm/s
+#endif // PONDEROMOTIVE
+#endif // TIME_VARIABLE_ABUNDANCES
+
 // **** PARAMETERS STRUCTURE ****
 
 // Define the parameters structure
