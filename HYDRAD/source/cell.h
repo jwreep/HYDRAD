@@ -66,8 +66,10 @@ struct AdaptiveMeshCellProperties {
 #ifdef TIME_VARIABLE_ABUNDANCES
     double AF[3], dAFbydt;
     #ifdef PONDEROMOTIVE
-        double elsasser_I[4]; // Elsasser variables I+, real and imaginary, I-, real and imaginary
-        double ponderomotive_a;  // Ponderomotive acceleration
+        double elsasser_I[4]; // Elsasser variables I+, real and imaginary, I-, real and imaginary [cm/s]
+        double ponderomotive_a;  // Ponderomotive acceleration [cm/s^2]
+        double B[3];             // field strength [G]
+        double v_A[3];           // Alfven speed [cm/s]
     #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 

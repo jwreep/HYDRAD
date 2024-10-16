@@ -34,8 +34,9 @@
 
 #ifdef TIME_VARIABLE_ABUNDANCES
 #ifdef PONDEROMOTIVE
-#define INJECTION_HEIGHT 1.0e8 // cm
-#define WAVE_AMPLITUDE 1.0e5   // cm/s
+#define INJECTION_HEIGHT 1.0e8    // cm
+#define WAVE_AMPLITUDE 1.0e5      // cm/s
+#define PHOTOSPHERIC_FIELD 1.0e3  // G
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 

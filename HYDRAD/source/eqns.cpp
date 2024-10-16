@@ -293,10 +293,19 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
              CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
          }
          #ifdef PONDEROMOTIVE
+            CellProperties.B[1] = PHOTOSPHERIC_FIELD * CalculateMagneticField(CellProperties.s[1] / Params.L);
+            CellProperties.v_A[1] = CellProperties.B[1] / sqrt(12.566371 * CellProperties.rho[1]);
+            // 12.566371 = 4 pi
+                        
             if( boundary_cell && CellProperties.s[1] >= INJECTION_HEIGHT )
-            {
+            {    // Only set the boundary condition in a single grid cell -- zero elsewhere
                 CellProperties.elsasser_I[0] = WAVE_AMPLITUDE;
-                boundary_cell = false;  // Only set the boundary condition in a single cell
+                for( i=1; i<4; i++) CellProperties.elsasser_I[i] = 0.0;
+                boundary_cell = false;  
+            }
+            else
+            {
+                for( i=0; i<4; i++) CellProperties.elsasser_I[i] = 0.0;
             }
          #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
@@ -337,6 +346,23 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
          {
              CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
          }
+         #ifdef PONDEROMOTIVE
+            CellProperties.B[1] = PHOTOSPHERIC_FIELD * CalculateMagneticField(CellProperties.s[1] / Params.L);
+            CellProperties.v_A[1] = CellProperties.B[1] / sqrt(12.566371 * CellProperties.rho[1]);
+            // 12.566371 = 4 pi
+                        
+            if( boundary_cell && CellProperties.s[1] >= INJECTION_HEIGHT )
+            {    // Only set the boundary condition in a single grid cell -- zero elsewhere
+                CellProperties.elsasser_I[0] = WAVE_AMPLITUDE;
+                for( i=1; i<4; i++) CellProperties.elsasser_I[i] = 0.0;
+                boundary_cell = false;  
+            }
+            else
+            {
+                for( i=0; i<4; i++) CellProperties.elsasser_I[i] = 0.0;
+            }
+         #endif // PONDEROMOTIVE
+
 #endif // TIME_VARIABLE_ABUNDANCES
 
 		pActiveCell->UpdateCellProperties( &CellProperties );
@@ -1793,6 +1819,44 @@ int j;
 	        
 			LeftCellProperties.AF[2] = CellProperties.AF[0];
            
+            #ifdef PONDEROMOTIVE
+            // CALCULATE THE FIELD STRENGTH AND ALFVEN SPEED
+             x[1] = FarLeftCellProperties.s[1];
+			x[2] = LeftCellProperties.s[1];
+			y[1] = FarLeftCellProperties.B[1];
+			y[2] = LeftCellProperties.B[1];
+			LinearFit( x, y, CellProperties.s[0], &Q1 );
+
+			x[1] = LeftCellProperties.s[1];
+			x[2] = CellProperties.s[1];
+			y[1] = LeftCellProperties.B[1];
+			y[2] = CellProperties.B[1];
+			LinearFit( x, y, CellProperties.s[0], &Q2 );
+
+	        Q3 = y[1];
+
+			if( y[2] <= y[1] )
+			{
+		    	QT = max( Q1, Q2 );
+			    if( Q3 < QT )
+		    	    CellProperties.B[0] = Q3;
+	    		else
+	        		CellProperties.B[0] = QT;
+			}
+			else
+			{
+	    		QT = min( Q1, Q2 );
+		    	if( Q3 > QT )
+		        	CellProperties.B[0] = Q3;
+	    		else
+	        		CellProperties.B[0] = QT;
+			}
+	         CellProperties.v_A[0] = CellProperties.B[0] / sqrt(12.566371 * CellProperties.rho[0]);
+                         
+			LeftCellProperties.B[2] = CellProperties.B[0];
+             LeftCellProperties.v_A[2] = CellProperties.v_A[0];
+
+            #endif // PONDEROMOTIVE
             #endif // TIME_VARIABLE_ABUNDANCES
 		
 			// CALCULATE THE MOMENTUM
@@ -1967,6 +2031,46 @@ int j;
 
 			LeftCellProperties.AF[2] = CellProperties.AF[0];
             
+            #ifdef PONDEROMOTIVE
+            // CALCULATE THE FIELD STRENGTH AND ALFVEN SPEED
+	        
+	        x[1] = CellProperties.s[1];
+			x[2] = RightCellProperties.s[1];
+			y[1] = CellProperties.B[1];
+			y[2] = RightCellProperties.B[1];
+			LinearFit( x, y, CellProperties.s[0], &Q1 );
+
+			x[1] = LeftCellProperties.s[1];
+			x[2] = CellProperties.s[1];
+			y[1] = LeftCellProperties.B[1];
+			y[2] = CellProperties.B[1];
+			LinearFit( x, y, CellProperties.s[0], &Q2 );
+
+	        Q3 = y[2];
+
+			// Note: The flow is in the opposite direction and so the conditional is switched
+			if( y[1] <= y[2] )
+			{
+    	        QT = max( Q1, Q2 );
+	    		if( Q3 < QT )
+	        		CellProperties.B[0] = Q3;
+	    		else
+	        		CellProperties.B[0] = QT;
+			}
+			else
+			{
+	    		QT = min( Q1, Q2 );
+		    	if( Q3 > QT )
+		        	CellProperties.B[0] = Q3;
+	    		else
+	        		CellProperties.B[0] = QT;
+			}
+             CellProperties.v_A[0] = CellProperties.B[0] / sqrt(12.566371 * CellProperties.rho[0]);
+
+			LeftCellProperties.B[2] = CellProperties.B[0];
+			LeftCellProperties.v_A[2] = CellProperties.v_A[0];
+
+            #endif // PONDEROMOTIVE
             #endif // TIME_VARIABLE_ABUNDANCES
         
 			// CALCULATE THE MOMENTUM
@@ -2475,6 +2579,11 @@ int j;
     // Calculate the time derivative of the abundance factor
         // Does not depend on the cross-sectional area!
     CellProperties.dAFbydt = - CellProperties.v[1] * ( UpperValue - LowerValue ) / CellProperties.cell_width;
+    #ifdef PONDEROMOTIVE
+    // Add in the acceleration term:
+    CellProperties.dAFbydt = - CellProperties.ponderomotive_a[1] * delta_t * ( UpperValue - LowerValue ) / CellProperties.cell_width;
+    
+    #endif // PONDEROMOTIVE
     
 #endif // TIME_VARIABLE_ABUNDANCES
 
