@@ -2580,9 +2580,19 @@ int j;
         // Does not depend on the cross-sectional area!
     CellProperties.dAFbydt = - CellProperties.v[1] * ( UpperValue - LowerValue ) / CellProperties.cell_width;
     #ifdef PONDEROMOTIVE
-    // Add in the acceleration term:
-    CellProperties.dAFbydt = - CellProperties.ponderomotive_a[1] * delta_t * ( UpperValue - LowerValue ) / CellProperties.cell_width;
+    // Add in the term for flows of a single species:
+        // Does not depend on the cross-sectional area!
+    CellProperties.dAFbydt += - CellProperties.ponderomotive_a[1] * delta_t * ( UpperValue - LowerValue ) / CellProperties.cell_width;
     
+    // Add in the fractionation term:
+    LowerValue = CellProperties.rho[0] * CellProperties.ponderomotive_a[0];
+    UpperValue = CellProperties.rho[2] * CellProperties.ponderomotive_a[2];
+    
+    #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+    CellProperties.dAFbydt += - ( CellProperties.AF[1] * delta_t / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / fCellVolume;
+    #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
+    CellProperties.dAFbydt += - ( CellProperties.AF[1] * delta_t / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / CellProperties.cell_width;
+    #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
     #endif // PONDEROMOTIVE
     
 #endif // TIME_VARIABLE_ABUNDANCES
