@@ -37,6 +37,7 @@
 #define INJECTION_HEIGHT 1.0e8    // cm
 #define WAVE_AMPLITUDE 1.0e5      // cm/s
 #define PHOTOSPHERIC_FIELD 1.0e3  // G
+#define WAVE_FREQUENCY 0.03       // Hz
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
