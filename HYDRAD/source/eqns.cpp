@@ -719,6 +719,10 @@ double fLogLambda_ei;
 double term1, term2;
 int j;
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+    double fFIP;
+#endif // TIME_VARIABLE_ABUNDANCES
+
 #ifdef OPTICALLY_THICK_RADIATION
 #ifdef NLTE_CHROMOSPHERE
 	CELLPROPERTIES NextCellProperties;
@@ -739,10 +743,6 @@ int j;
 	log_fAvgEE = log( pHeat->GetAvgEE() );
 	fLambda2 = 25.1 + log_fAvgEE;
 #endif // BEAM_HEATING
-
-#ifdef TIME_VARIABLE_ABUNDANCES
-    double fFIP;
-#endif // TIME_VARIABLE_ABUNDANCES
 
 	memset( &CellProperties, 0, sizeof(CELLPROPERTIES) );	// Avoids a warning that variables might be used undefined
 
