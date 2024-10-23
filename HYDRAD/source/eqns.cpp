@@ -290,22 +290,29 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
          // and set the initial abundance factors to coronal for cells above the chromosphere
          else
          {
-             CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
+             //CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
+             CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
          #ifdef PONDEROMOTIVE
+            
+            #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
             CellProperties.B[1] = PHOTOSPHERIC_FIELD * CalculateMagneticField(CellProperties.s[1] / Params.L);
+            #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
+            CellProperties.B[1] = 100.0;  // Uniform area loop = uniform field strength
+            #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+            
             CellProperties.v_A[1] = CellProperties.B[1] / sqrt(12.566371 * CellProperties.rho[1]);
             // 12.566371 = 4 pi
                         
             if( boundary_cell && CellProperties.s[1] >= INJECTION_HEIGHT )
             {    // Only set the boundary condition in a single grid cell -- zero elsewhere
                 CellProperties.elsasser_I[0] = WAVE_AMPLITUDE;
-                for( i=1; i<4; i++) CellProperties.elsasser_I[i] = 0.0;
+                for( i=1; i<=3; i++) CellProperties.elsasser_I[i] = 0.0;
                 boundary_cell = false;  
             }
             else
             {
-                for( i=0; i<4; i++) CellProperties.elsasser_I[i] = 0.0;
+                for( i=0; i<=3; i++) CellProperties.elsasser_I[i] = 0.0;
             }
          #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
@@ -344,22 +351,29 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
          // and set the initial abundance factors to coronal for cells above the chromosphere
          else
          {
-             CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
+             //CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
+             CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
          #ifdef PONDEROMOTIVE
+            
+            #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
             CellProperties.B[1] = PHOTOSPHERIC_FIELD * CalculateMagneticField(CellProperties.s[1] / Params.L);
+            #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
+            CellProperties.B[1] = 100.0;  // Uniform area loop = uniform field strength
+            #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+            
             CellProperties.v_A[1] = CellProperties.B[1] / sqrt(12.566371 * CellProperties.rho[1]);
             // 12.566371 = 4 pi
                         
             if( boundary_cell && CellProperties.s[1] >= INJECTION_HEIGHT )
             {    // Only set the boundary condition in a single grid cell -- zero elsewhere
                 CellProperties.elsasser_I[0] = WAVE_AMPLITUDE;
-                for( i=1; i<4; i++) CellProperties.elsasser_I[i] = 0.0;
+                for( i=1; i<=3; i++) CellProperties.elsasser_I[i] = 0.0;
                 boundary_cell = false;  
             }
             else
             {
-                for( i=0; i<4; i++) CellProperties.elsasser_I[i] = 0.0;
+                for( i=0; i<=3; i++) CellProperties.elsasser_I[i] = 0.0;
             }
          #endif // PONDEROMOTIVE
 
@@ -756,6 +770,13 @@ double fLogLambda_ei;
 double term1, term2;
 int j;
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+    double fFIP;
+    #ifdef PONDEROMOTIVE
+    bool boundary_cell = true;
+    #endif // PONDEROMOTIVE
+#endif // TIME_VARIABLE_ABUNDANCES
+
 #ifdef OPTICALLY_THICK_RADIATION
 #ifdef NLTE_CHROMOSPHERE
 	CELLPROPERTIES NextCellProperties;
@@ -776,10 +797,6 @@ int j;
 	log_fAvgEE = log( pHeat->GetAvgEE() );
 	fLambda2 = 25.1 + log_fAvgEE;
 #endif // BEAM_HEATING
-
-#ifdef TIME_VARIABLE_ABUNDANCES
-    double fFIP;
-#endif // TIME_VARIABLE_ABUNDANCES
 
 	memset( &CellProperties, 0, sizeof(CELLPROPERTIES) );	// Avoids a warning that variables might be used undefined
 
@@ -1109,9 +1126,31 @@ int j;
             }
             else
             {
-                CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
+                //CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
+                CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
             }
         }
+        #ifdef PONDEROMOTIVE
+            #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+            CellProperties.B[1] = PHOTOSPHERIC_FIELD * CalculateMagneticField(CellProperties.s[1] / Params.L);
+            #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
+            CellProperties.B[1] = 100.0;  // Uniform area loop = uniform field strength
+            #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+            
+            CellProperties.v_A[1] = CellProperties.B[1] / sqrt(12.566371 * CellProperties.rho[1]);
+            // 12.566371 = 4 pi
+                        
+            if( boundary_cell && CellProperties.s[1] >= INJECTION_HEIGHT )
+            {    // Only set the boundary condition in a single grid cell -- zero elsewhere
+                CellProperties.elsasser_I[0] = WAVE_AMPLITUDE;
+                for( j=1; j<=3; j++) CellProperties.elsasser_I[j] = 0.0;
+                boundary_cell = false;  
+            }
+            else
+            {
+                for( j=0; j<=3; j++) CellProperties.elsasser_I[j] = 0.0;
+            }
+        #endif // PONDEROMOTIVE
         #endif // TIME_VARIABLE_ABUNDANCES
 
 #ifdef OPTICALLY_THICK_RADIATION
@@ -1588,6 +1627,12 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+#ifdef PONDEROMOTIVE
+double H_D, H_A, v_sum, v_diff, drhobyds, dvAbyds;
+#endif // PONDEROMOTIVE
+#endif // TIME_VARIABLE_ABUNDANCES
+
 #ifdef BEAM_HEATING
 	double BeamParams[3];
 	pHeat->CalculateBeamParameters( current_time, BeamParams );
@@ -1820,6 +1865,42 @@ int j;
 			LeftCellProperties.AF[2] = CellProperties.AF[0];
            
             #ifdef PONDEROMOTIVE
+              //   CALCULATE THE PONDEROMOTIVE ACCELERATION
+              x[1] = FarLeftCellProperties.s[1];
+			x[2] = LeftCellProperties.s[1];
+			y[1] = FarLeftCellProperties.ponderomotive_a[1];
+			y[2] = LeftCellProperties.ponderomotive_a[1];
+			LinearFit( x, y, CellProperties.s[0], &Q1 );
+
+			x[1] = LeftCellProperties.s[1];
+			x[2] = CellProperties.s[1];
+			y[1] = LeftCellProperties.ponderomotive_a[1];
+			y[2] = CellProperties.ponderomotive_a[1];
+			LinearFit( x, y, CellProperties.s[0], &Q2 );
+
+	        Q3 = y[1];
+
+			if( y[2] <= y[1] )
+			{
+		    	QT = max( Q1, Q2 );
+			    if( Q3 < QT )
+		    	    CellProperties.ponderomotive_a[0] = Q3;
+	    		else
+	        		CellProperties.ponderomotive_a[0] = QT;
+			}
+			else
+			{
+	    		QT = min( Q1, Q2 );
+		    	if( Q3 > QT )
+		        	CellProperties.ponderomotive_a[0] = Q3;
+	    		else
+	        		CellProperties.ponderomotive_a[0] = QT;
+			}
+	         CellProperties.v_A[0] = CellProperties.ponderomotive_a[0] / sqrt(12.566371 * CellProperties.rho[0]);
+                         
+			LeftCellProperties.ponderomotive_a[2] = CellProperties.ponderomotive_a[0];
+             LeftCellProperties.v_A[2] = CellProperties.v_A[0];
+
             // CALCULATE THE FIELD STRENGTH AND ALFVEN SPEED
              x[1] = FarLeftCellProperties.s[1];
 			x[2] = LeftCellProperties.s[1];
@@ -2032,6 +2113,42 @@ int j;
 			LeftCellProperties.AF[2] = CellProperties.AF[0];
             
             #ifdef PONDEROMOTIVE
+            // CALCULATE THE PONDEROMOTIVE ACCELERATION
+	        
+	        x[1] = CellProperties.s[1];
+			x[2] = RightCellProperties.s[1];
+			y[1] = CellProperties.ponderomotive_a[1];
+			y[2] = RightCellProperties.ponderomotive_a[1];
+			LinearFit( x, y, CellProperties.s[0], &Q1 );
+
+			x[1] = LeftCellProperties.s[1];
+			x[2] = CellProperties.s[1];
+			y[1] = LeftCellProperties.ponderomotive_a[1];
+			y[2] = CellProperties.ponderomotive_a[1];
+			LinearFit( x, y, CellProperties.s[0], &Q2 );
+
+	        Q3 = y[2];
+
+			// Note: The flow is in the opposite direction and so the conditional is switched
+			if( y[1] <= y[2] )
+			{
+    	        QT = max( Q1, Q2 );
+	    		if( Q3 < QT )
+	        		CellProperties.ponderomotive_a[0] = Q3;
+	    		else
+	        		CellProperties.ponderomotive_a[0] = QT;
+			}
+			else
+			{
+	    		QT = min( Q1, Q2 );
+		    	if( Q3 > QT )
+		        	CellProperties.ponderomotive_a[0] = Q3;
+	    		else
+	        		CellProperties.ponderomotive_a[0] = QT;
+			}
+            
+			LeftCellProperties.ponderomotive_a[2] = CellProperties.ponderomotive_a[0];
+
             // CALCULATE THE FIELD STRENGTH AND ALFVEN SPEED
 	        
 	        x[1] = CellProperties.s[1];
@@ -2065,10 +2182,13 @@ int j;
 	    		else
 	        		CellProperties.B[0] = QT;
 			}
-             CellProperties.v_A[0] = CellProperties.B[0] / sqrt(12.566371 * CellProperties.rho[0]);
-
+            
 			LeftCellProperties.B[2] = CellProperties.B[0];
-			LeftCellProperties.v_A[2] = CellProperties.v_A[0];
+
+	         CellProperties.v_A[0] = CellProperties.B[0] / sqrt(12.566371 * CellProperties.rho[0]);
+                         
+			LeftCellProperties.B[2] = CellProperties.B[0];
+              LeftCellProperties.v_A[2] = CellProperties.v_A[0];
 
             #endif // PONDEROMOTIVE
             #endif // TIME_VARIABLE_ABUNDANCES
@@ -2507,10 +2627,12 @@ int j;
 		pLocalActiveCell = ppCellList[iCounter];
 		pLocalActiveCell->GetCellProperties( &CellProperties );
 
-		#if defined (NON_EQUILIBRIUM_RADIATION) || ( defined(OPTICALLY_THICK_RADIATION) && defined (NLTE_CHROMOSPHERE) )
+		#if defined (NON_EQUILIBRIUM_RADIATION) || ( defined(OPTICALLY_THICK_RADIATION) && defined (NLTE_CHROMOSPHERE) ) || (defined(TIME_VARIABLE_ABUNDANCES) && defined(PONDEROMOTIVE))
 	    	pLeftCell = pLocalActiveCell->pGetPointer( LEFT );
     		pLeftCell->GetCellProperties( &LeftCellProperties );
-
+         #endif // NON_EQUILIBRIUM_RADIATION || ( OPTICALLY_THICK_RADIATION && NLTE_CHROMOSPHERE ) || (TIME_VARIABLE_ABUNDANCES && PONDEROMOTIVE)
+         
+         #if defined (NON_EQUILIBRIUM_RADIATION) || ( defined(OPTICALLY_THICK_RADIATION) && defined (NLTE_CHROMOSPHERE) )
 	    	pRightCell = pLocalActiveCell->pGetPointer( RIGHT );
 	    	pRightCell->GetCellProperties( &RightCellProperties );
 
@@ -2519,7 +2641,7 @@ int j;
 
 	    	pFarRightCell = pRightCell->pGetPointer( RIGHT );
     		pFarRightCell->GetCellProperties( &FarRightCellProperties );
-		#endif // NON_EQUILIBRIUM_RADIATION || ( OPTICALLY_THICK_RADIATION && NLTE_CHROMOSPHERE )
+		#endif // NON_EQUILIBRIUM_RADIATION || ( OPTICALLY_THICK_RADIATION && NLTE_CHROMOSPHERE ) 
 #else // OPENMP
 	pNextActiveCell = pStartOfCurrentRow->pGetPointer( RIGHT )->pGetPointer( RIGHT );
 	while( pNextActiveCell->pGetPointer( RIGHT )->pGetPointer( RIGHT ) )
@@ -2527,10 +2649,12 @@ int j;
 	    pActiveCell = pNextActiveCell;
 		pActiveCell->GetCellProperties( &CellProperties );
 
-		#if defined (NON_EQUILIBRIUM_RADIATION) || ( defined(OPTICALLY_THICK_RADIATION) && defined (NLTE_CHROMOSPHERE) )
+		#if defined (NON_EQUILIBRIUM_RADIATION) || ( defined(OPTICALLY_THICK_RADIATION) && defined (NLTE_CHROMOSPHERE) ) || (defined(TIME_VARIABLE_ABUNDANCES) && defined(PONDEROMOTIVE))
 	    	pLeftCell = pActiveCell->pGetPointer( LEFT );
     		pLeftCell->GetCellProperties( &LeftCellProperties );
-
+         #endif // NON_EQUILIBRIUM_RADIATION || ( OPTICALLY_THICK_RADIATION && NLTE_CHROMOSPHERE ) || (TIME_VARIABLE_ABUNDANCES && PONDEROMOTIVE)
+         
+         #if defined (NON_EQUILIBRIUM_RADIATION) || ( defined(OPTICALLY_THICK_RADIATION) && defined (NLTE_CHROMOSPHERE) )
 	    	pRightCell = pActiveCell->pGetPointer( RIGHT );
 	    	pRightCell->GetCellProperties( &RightCellProperties );
 
@@ -2582,42 +2706,56 @@ int j;
         CellProperties.dAFbydt = - CellProperties.v[1] * ( UpperValue - LowerValue ) / CellProperties.cell_width;
         
         #ifdef PONDEROMOTIVE
-        // Calculate all of the necessary variables first to get the ponderomotive acceleration
-        dvAbyds = (CellProperties.v_A[2] - CellProperties.v_A[0]) / CellProperties.cell_width;
-        drhobyds = (CellProperties.rho[2] - CellProperties.rho[0]) / CellProperties.cell_width;
+
+        // Now, calculate the cell-centered acceleration to be used by the next time step:
+            // Calculate all of the preliminary variables first
+        //dvAbyds = (CellProperties.v_A[2] - CellProperties.v_A[0]) / CellProperties.cell_width;
+        //drhobyds = (CellProperties.rho[2] - CellProperties.rho[0]) / CellProperties.cell_width;
+        dvAbyds = (CellProperties.v_A[1] - LeftCellProperties.v_A[1]) / (0.5 * (CellProperties.cell_width + LeftCellProperties.cell_width));
+        drhobyds = (CellProperties.rho[1] - LeftCellProperties.rho[1]) / (0.5 * (CellProperties.cell_width + LeftCellProperties.cell_width));
         H_D = CellProperties.rho[1] / drhobyds;
         H_A = CellProperties.v_A[1] / dvAbyds;
-        
         v_sum = CellProperties.v[1] + CellProperties.v_A[1];
         v_diff = CellProperties.v[1] - CellProperties.v_A[1];
         
         // Calculate the Elsasser I variables 
-        for( i=0; i<=3; i++)
-            CellProperties.elsasser_I[i] = LeftCellProperties.elsasser_I[i] + CellProperties.cell_width * LeftCellProperties.dIbyds[i];
-    
+        for( j=0; j<=3; j++)
+        {
+            if( abs(CellProperties.elsasser_I[j]) > 0.0 )
+                CellProperties.elsasser_I[j] = CellProperties.elsasser_I[j] + CellProperties.cell_width * LeftCellProperties.dIbyds[j];
+            else
+                CellProperties.elsasser_I[j] = LeftCellProperties.elsasser_I[j] + CellProperties.cell_width * LeftCellProperties.dIbyds[j];
+        }
         // Calculate the spatial gradients of the Elsasser I variables
-        CellProperties.dIbyds[0] = (v_sum * (CellProperties.elsasser_I[0]/(4.0 * H_D) + CellProperties.elsasser_I[1]/(2.0 * H_A) + WAVE_FREQUENCY * CellProperties.elsasser_I[2]) / v_diff;
-        CellProperties.dIbyds[1] = (v_diff * (CellProperties.elsasser_I[1]/(4.0 * H_D) + CellProperties.elsasser_I[0]/(2.0 * H_A) + WAVE_FREQUENCY * CellProperties.elsasser_I[3]) / v_sum;
-        CellProperties.dIbyds[2] = (v_sum * (CellProperties.elsasser_I[2]/(4.0 * H_D) + CellProperties.elsasser_I[3]/(2.0 * H_A) + WAVE_FREQUENCY * CellProperties.elsasser_I[0]) / v_diff;
-        CellProperties.dIbyds[3] = (v_diff * (CellProperties.elsasser_I[3]/(4.0 * H_D) + CellProperties.elsasser_I[2]/(2.0 * H_A) + WAVE_FREQUENCY * CellProperties.elsasser_I[1]) / v_sum;
+        CellProperties.dIbyds[0] = (v_sum * (CellProperties.elsasser_I[0]/(4.0 * H_D) + CellProperties.elsasser_I[1]/(2.0 * H_A)) + WAVE_FREQUENCY * CellProperties.elsasser_I[2] ) / v_diff;
+        CellProperties.dIbyds[1] = (v_diff * (CellProperties.elsasser_I[1]/(4.0 * H_D) + CellProperties.elsasser_I[0]/(2.0 * H_A)) + WAVE_FREQUENCY * CellProperties.elsasser_I[3] ) / v_sum;
+        CellProperties.dIbyds[2] = (v_sum * (CellProperties.elsasser_I[2]/(4.0 * H_D) + CellProperties.elsasser_I[3]/(2.0 * H_A)) + WAVE_FREQUENCY * CellProperties.elsasser_I[0] ) / v_diff;
+        CellProperties.dIbyds[3] = (v_diff * (CellProperties.elsasser_I[3]/(4.0 * H_D) + CellProperties.elsasser_I[2]/(2.0 * H_A)) + WAVE_FREQUENCY * CellProperties.elsasser_I[1] ) / v_sum;
         
-        CellProperties.ponderomotive_a = 0.0;
-        for( i=0; i<=3; i++)
-            CellProperties.ponderomotive_a += CellProperties.elsasser_I[i] * CellProperties.dIbyds[i];
+        CellProperties.ponderomotive_a[1] = 0.0;
+        for( j=0; j<=3; j++)
+            CellProperties.ponderomotive_a[1] += CellProperties.elsasser_I[j] * CellProperties.dIbyds[j];
                 
+        //if( abs(CellProperties.s[1] - 5e8) < 5e7 )
+        //    CellProperties.ponderomotive_a[1] = 1e5;
+        //if( abs(CellProperties.s[1] - (Params.L - 5e8)) < 5e7 )
+        //    CellProperties.ponderomotive_a[1] = -1e5;
+            
+        
         // Add in the term for flows of a single species:
             // Does not depend on the cross-sectional area!
-        CellProperties.dAFbydt += - CellProperties.ponderomotive_a[1] * delta_t * ( UpperValue - LowerValue ) / CellProperties.cell_width;
+        CellProperties.dAFbydt += - CellProperties.ponderomotive_a[1] * (*delta_t) * ( UpperValue - LowerValue ) / CellProperties.cell_width;
     
         // Add in the fractionation term:
         LowerValue = CellProperties.rho[0] * CellProperties.ponderomotive_a[0];
         UpperValue = CellProperties.rho[2] * CellProperties.ponderomotive_a[2];
     
         #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
-        CellProperties.dAFbydt += - ( CellProperties.AF[1] * delta_t / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / fCellVolume;
+        CellProperties.dAFbydt += - ( CellProperties.AF[1] * (*delta_t) / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / fCellVolume;
         #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
-        CellProperties.dAFbydt += - ( CellProperties.AF[1] * delta_t / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / CellProperties.cell_width;
+        CellProperties.dAFbydt += - ( CellProperties.AF[1] * (*delta_t) / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / CellProperties.cell_width;
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+
         #endif // PONDEROMOTIVE
     
 #endif // TIME_VARIABLE_ABUNDANCES
