@@ -2015,6 +2015,15 @@ char szAbundFilename[256];
 sprintf( szAbundFilename, "Results/profile%i.abd", iFileNumber );
 pAbundFile = fopen( szAbundFilename, "w" );
 #endif // WRITE_FILE_ABUNDANCE_FACTOR
+
+#ifdef PONDEROMOTIVE
+#ifdef WRITE_FILE_PONDEROMOTIVE
+#endif // WRITE_FILE_PONDEROMOTIVE
+FILE *pPonderoFile;
+char szPonderoFilename[256];
+sprintf( szPonderoFilename, "Results/profile%i.pdr", iFileNumber );
+pPonderoFile = fopen ( szPonderoFilename, "w" );
+#endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
 #ifdef OPTICALLY_THICK_RADIATION
@@ -2117,6 +2126,14 @@ while( pNextActiveCell )
     fprintf( pAbundFile, "\t%.8e", CellProperties.AF[1] );
     fprintf( pAbundFile, "\n" );
 #endif // WRITE_FILE_ABUNDANCE_FACTOR
+
+#ifdef PONDEROMOTIVE
+#ifdef WRITE_FILE_PONDEROMOTIVE
+    fprintf( pPonderoFile, "%.8e", CellProperties.s[1] );
+    fprintf( pPonderoFile, "\t%.8e", CellProperties.ponderomotive_a[1] );
+    fprintf( pPonderoFile, "\n" );
+#endif // WRITE_FILE_PONDEROMOTIVE
+#endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
 #ifdef OPTICALLY_THICK_RADIATION
@@ -2155,6 +2172,13 @@ fclose( pTermsFile );
 #ifdef WRITE_FILE_ABUNDANCE_FACTOR
 fclose( pAbundFile );
 #endif // WRITE_FILE_ABUNDANCE_FACTOR
+
+#ifdef PONDEROMOTIVE
+#ifdef WRITE_FILE_PONDEROMOTIVE
+#endif // WRITE_FILE_PONDEROMOTIVE
+fclose( pPonderoFile );
+#endif // PONDEROMOTIVE
+
 #endif // TIME_VARIABLE_ABUNDANCES
 
 #ifdef OPTICALLY_THICK_RADIATION

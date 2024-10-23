@@ -2710,9 +2710,9 @@ int j;
         // Now, calculate the cell-centered acceleration to be used by the next time step:
             // Calculate all of the preliminary variables first
         //dvAbyds = (CellProperties.v_A[2] - CellProperties.v_A[0]) / CellProperties.cell_width;
-        //drhobyds = (CellProperties.rho[2] - CellProperties.rho[0]) / CellProperties.cell_width;
+        drhobyds = (CellProperties.rho[2] - CellProperties.rho[0]) / CellProperties.cell_width;
         dvAbyds = (CellProperties.v_A[1] - LeftCellProperties.v_A[1]) / (0.5 * (CellProperties.cell_width + LeftCellProperties.cell_width));
-        drhobyds = (CellProperties.rho[1] - LeftCellProperties.rho[1]) / (0.5 * (CellProperties.cell_width + LeftCellProperties.cell_width));
+        //drhobyds = (CellProperties.rho[1] - LeftCellProperties.rho[1]) / (0.5 * (CellProperties.cell_width + LeftCellProperties.cell_width));
         H_D = CellProperties.rho[1] / drhobyds;
         H_A = CellProperties.v_A[1] / dvAbyds;
         v_sum = CellProperties.v[1] + CellProperties.v_A[1];
@@ -2734,7 +2734,7 @@ int j;
         
         CellProperties.ponderomotive_a[1] = 0.0;
         for( j=0; j<=3; j++)
-            CellProperties.ponderomotive_a[1] += CellProperties.elsasser_I[j] * CellProperties.dIbyds[j];
+            CellProperties.ponderomotive_a[1] += 0.25 * (CellProperties.elsasser_I[j] * CellProperties.dIbyds[j]);
                 
         //if( abs(CellProperties.s[1] - 5e8) < 5e7 )
         //    CellProperties.ponderomotive_a[1] = 1e5;
