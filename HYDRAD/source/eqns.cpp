@@ -283,7 +283,7 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
 
 #ifdef TIME_VARIABLE_ABUNDANCES
          // Set the initial abundance factors to photospheric for cells in the chromosphere
-         if CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE)
+         if (CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE)
          {
              CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
@@ -344,7 +344,7 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
 
 #ifdef TIME_VARIABLE_ABUNDANCES
          // Set the initial abundance factors to photospheric for cells in the chromosphere
-         if CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE)
+         if (CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE)
          {
              CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
