@@ -2733,14 +2733,11 @@ int j;
         CellProperties.dIbyds[3] = (v_diff * (CellProperties.elsasser_I[3]/(4.0 * H_D) + CellProperties.elsasser_I[2]/(2.0 * H_A)) + WAVE_FREQUENCY * CellProperties.elsasser_I[1] ) / v_sum;
         
         CellProperties.ponderomotive_a[1] = 0.0;
-        for( j=0; j<=3; j++)
-            CellProperties.ponderomotive_a[1] += 0.25 * (CellProperties.elsasser_I[j] * CellProperties.dIbyds[j]);
-                
-        //if( abs(CellProperties.s[1] - 5e8) < 5e7 )
-        //    CellProperties.ponderomotive_a[1] = 1e5;
-        //if( abs(CellProperties.s[1] - (Params.L - 5e8)) < 5e7 )
-        //    CellProperties.ponderomotive_a[1] = -1e5;
-            
+        if ( (CellProperties.s[1] >= INJECTION_HEIGHT) && (CellProperties.s[1] <= (Params.L - INJECTION_HEIGHT) ) )
+        {
+            for( j=0; j<=3; j++)
+                CellProperties.ponderomotive_a[1] += 0.25 * (CellProperties.elsasser_I[j] * CellProperties.dIbyds[j]);
+        }
         
         // Add in the term for flows of a single species:
             // Does not depend on the cross-sectional area!
