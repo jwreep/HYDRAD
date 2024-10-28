@@ -303,6 +303,7 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
             
             CellProperties.v_A[1] = CellProperties.B[1] / sqrt(12.566371 * CellProperties.rho[1]);
             // 12.566371 = 4 pi
+            CellProperties.v_p[1] = 0.0;  // zero initial ponderomotive-induced velocity
                         
             if( boundary_cell && CellProperties.s[1] >= INJECTION_HEIGHT )
             {    // Only set the boundary condition in a single grid cell -- zero elsewhere
@@ -364,6 +365,7 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
             
             CellProperties.v_A[1] = CellProperties.B[1] / sqrt(12.566371 * CellProperties.rho[1]);
             // 12.566371 = 4 pi
+            CellProperties.v_p[1] = 0.0;  // zero initial ponderomotive-induced velocity
                         
             if( boundary_cell && CellProperties.s[1] >= INJECTION_HEIGHT )
             {    // Only set the boundary condition in a single grid cell -- zero elsewhere
@@ -1139,6 +1141,7 @@ int j;
             
             CellProperties.v_A[1] = CellProperties.B[1] / sqrt(12.566371 * CellProperties.rho[1]);
             // 12.566371 = 4 pi
+            CellProperties.v_p[1] = 0.0;  // zero initial ponderomotive-induced velocity
                         
             if( boundary_cell && CellProperties.s[1] >= INJECTION_HEIGHT )
             {    // Only set the boundary condition in a single grid cell -- zero elsewhere
@@ -1865,17 +1868,17 @@ int j;
 			LeftCellProperties.AF[2] = CellProperties.AF[0];
            
             #ifdef PONDEROMOTIVE
-              //   CALCULATE THE PONDEROMOTIVE ACCELERATION
+              //   CALCULATE THE PONDEROMOTIVE-INDUCED VELOCITY
               x[1] = FarLeftCellProperties.s[1];
 			x[2] = LeftCellProperties.s[1];
-			y[1] = FarLeftCellProperties.ponderomotive_a[1];
-			y[2] = LeftCellProperties.ponderomotive_a[1];
+			y[1] = FarLeftCellProperties.v_p[1];
+			y[2] = LeftCellProperties.v_p[1];
 			LinearFit( x, y, CellProperties.s[0], &Q1 );
 
 			x[1] = LeftCellProperties.s[1];
 			x[2] = CellProperties.s[1];
-			y[1] = LeftCellProperties.ponderomotive_a[1];
-			y[2] = CellProperties.ponderomotive_a[1];
+			y[1] = LeftCellProperties.v_p[1];
+			y[2] = CellProperties.v_p[1];
 			LinearFit( x, y, CellProperties.s[0], &Q2 );
 
 	        Q3 = y[1];
@@ -1884,22 +1887,20 @@ int j;
 			{
 		    	QT = max( Q1, Q2 );
 			    if( Q3 < QT )
-		    	    CellProperties.ponderomotive_a[0] = Q3;
+		    	    CellProperties.v_p[0] = Q3;
 	    		else
-	        		CellProperties.ponderomotive_a[0] = QT;
+	        		CellProperties.v_p[0] = QT;
 			}
 			else
 			{
 	    		QT = min( Q1, Q2 );
 		    	if( Q3 > QT )
-		        	CellProperties.ponderomotive_a[0] = Q3;
+		        	CellProperties.v_p[0] = Q3;
 	    		else
-	        		CellProperties.ponderomotive_a[0] = QT;
+	        		CellProperties.v_p[0] = QT;
 			}
-	         CellProperties.v_A[0] = CellProperties.ponderomotive_a[0] / sqrt(12.566371 * CellProperties.rho[0]);
                          
-			LeftCellProperties.ponderomotive_a[2] = CellProperties.ponderomotive_a[0];
-             LeftCellProperties.v_A[2] = CellProperties.v_A[0];
+			LeftCellProperties.v_p[2] = CellProperties.v_p[0];
 
             // CALCULATE THE FIELD STRENGTH AND ALFVEN SPEED
              x[1] = FarLeftCellProperties.s[1];
@@ -2113,18 +2114,18 @@ int j;
 			LeftCellProperties.AF[2] = CellProperties.AF[0];
             
             #ifdef PONDEROMOTIVE
-            // CALCULATE THE PONDEROMOTIVE ACCELERATION
+            // CALCULATE THE PONDEROMOTIVE-INDUCED VELOCITY
 	        
 	        x[1] = CellProperties.s[1];
 			x[2] = RightCellProperties.s[1];
-			y[1] = CellProperties.ponderomotive_a[1];
-			y[2] = RightCellProperties.ponderomotive_a[1];
+			y[1] = CellProperties.v_p[1];
+			y[2] = RightCellProperties.v_p[1];
 			LinearFit( x, y, CellProperties.s[0], &Q1 );
 
 			x[1] = LeftCellProperties.s[1];
 			x[2] = CellProperties.s[1];
-			y[1] = LeftCellProperties.ponderomotive_a[1];
-			y[2] = CellProperties.ponderomotive_a[1];
+			y[1] = LeftCellProperties.v_p[1];
+			y[2] = CellProperties.v_p[1];
 			LinearFit( x, y, CellProperties.s[0], &Q2 );
 
 	        Q3 = y[2];
@@ -2134,20 +2135,20 @@ int j;
 			{
     	        QT = max( Q1, Q2 );
 	    		if( Q3 < QT )
-	        		CellProperties.ponderomotive_a[0] = Q3;
+	        		CellProperties.v_p[0] = Q3;
 	    		else
-	        		CellProperties.ponderomotive_a[0] = QT;
+	        		CellProperties.v_p[0] = QT;
 			}
 			else
 			{
 	    		QT = min( Q1, Q2 );
 		    	if( Q3 > QT )
-		        	CellProperties.ponderomotive_a[0] = Q3;
+		        	CellProperties.v_p[0] = Q3;
 	    		else
-	        		CellProperties.ponderomotive_a[0] = QT;
+	        		CellProperties.v_p[0] = QT;
 			}
             
-			LeftCellProperties.ponderomotive_a[2] = CellProperties.ponderomotive_a[0];
+			LeftCellProperties.v_p[2] = CellProperties.v_p[0];
 
             // CALCULATE THE FIELD STRENGTH AND ALFVEN SPEED
 	        
@@ -2733,24 +2734,28 @@ int j;
         CellProperties.dIbyds[3] = (v_diff * (CellProperties.elsasser_I[3]/(4.0 * H_D) + CellProperties.elsasser_I[2]/(2.0 * H_A)) + WAVE_FREQUENCY * CellProperties.elsasser_I[1] ) / v_sum;
         
         CellProperties.ponderomotive_a[1] = 0.0;
+        // Only allow the acceleration to be non-zero above a certain height.  Waves should in principle be totally reflected
+        // at beta = 1, and the behavior below this height is not particularly numerically stable, nor necessarily physical.
         if ( (CellProperties.s[1] >= INJECTION_HEIGHT) && (CellProperties.s[1] <= (Params.L - INJECTION_HEIGHT) ) )
         {
             for( j=0; j<=3; j++)
                 CellProperties.ponderomotive_a[1] += 0.25 * (CellProperties.elsasser_I[j] * CellProperties.dIbyds[j]);
         }
         
+        CellProperties.v_p[1] += CellProperties.ponderomotive_a[1] * (*delta_t);  
+        
         // Add in the term for flows of a single species:
             // Does not depend on the cross-sectional area!
-        CellProperties.dAFbydt += - CellProperties.ponderomotive_a[1] * (*delta_t) * ( UpperValue - LowerValue ) / CellProperties.cell_width;
+        CellProperties.dAFbydt += - CellProperties.v_p[1] * ( UpperValue - LowerValue ) / CellProperties.cell_width;
     
         // Add in the fractionation term:
-        LowerValue = CellProperties.rho[0] * CellProperties.ponderomotive_a[0];
-        UpperValue = CellProperties.rho[2] * CellProperties.ponderomotive_a[2];
+        LowerValue = CellProperties.rho[0] * CellProperties.v_p[0];
+        UpperValue = CellProperties.rho[2] * CellProperties.v_p[2];
     
         #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
-        CellProperties.dAFbydt += - ( CellProperties.AF[1] * (*delta_t) / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / fCellVolume;
+        CellProperties.dAFbydt += - ( CellProperties.AF[1] / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / fCellVolume;
         #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
-        CellProperties.dAFbydt += - ( CellProperties.AF[1] * (*delta_t) / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / CellProperties.cell_width;
+        CellProperties.dAFbydt += - ( CellProperties.AF[1] / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / CellProperties.cell_width;
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
 
         #endif // PONDEROMOTIVE
