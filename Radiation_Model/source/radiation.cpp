@@ -286,6 +286,23 @@ if( i == NumElements ) return 0.0;
 
 return ppElements[i]->GetFIP();
 }
+
+#ifdef PONDEROMOTIVE
+double CRadiation::GetLowFIPAbundance()
+{
+    int i;
+    double sum;
+    
+    sum = 0.0;
+    for( i=0; i<NumElements; i++ )
+    {
+        if(  ppElements[i]->GetFIP() <= LOW_FIP_THRESHOLD )
+            sum += ppElements[i]->GetAbundance();
+    }
+    
+    return sum;
+}
+#endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
 

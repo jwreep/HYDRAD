@@ -87,6 +87,12 @@ class CEquations {
     PCELL pCentreOfCurrentRow;
 #endif // OPTICALLY_THICK_RADIATION || BEAM_HEATING
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+#ifdef PONDEROMOTIVE
+    double low_FIP_abundance;
+#endif // TIME_VARIABLE_ABUNDANCES
+#endif // PONDEROMOTIVE
+
     // Pointer to the left-most cell at the previous time (the start of the previous row)
     PCELL pStartOfPreviousRow;
 

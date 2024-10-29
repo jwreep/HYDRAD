@@ -73,6 +73,10 @@ class CRadiation {
     #ifdef TIME_VARIABLE_ABUNDANCES
     // Function to return the first ionization potential of a specified element
     double GetFIP( int iZ );
+    #ifdef PONDEROMOTIVE
+    // Function to return the summed photospheric abundance of all low FIP elements
+    double GetLowFIPAbundance();
+    #endif // PONDEROMOTIVE
     #endif // TIME_VARIABLE_ABUNDANCES
 
 	// Functions to return the ionization and recombination rates of a particular element and ion, at a specified temperature and density

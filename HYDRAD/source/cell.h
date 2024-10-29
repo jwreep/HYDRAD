@@ -70,6 +70,7 @@ struct AdaptiveMeshCellProperties {
         double dIbyds[4];      // Spatial gradient of the Elsasser I [1/s]
         double ponderomotive_a[3];  // Ponderomotive acceleration [cm/s^2]
         double v_p[3];              // Ponderomotive-induced velocity of low FIP elements [cm/s]
+        double dvpbydt;          // Time derivative of the ponderomotive-induced velocity [cm/s^2]
         double B[3];             // field strength [G]
         double v_A[3];           // Alfven speed [cm/s]
     #endif // PONDEROMOTIVE
