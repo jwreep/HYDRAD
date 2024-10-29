@@ -1141,7 +1141,6 @@ int j;
             
             CellProperties.v_A[1] = CellProperties.B[1] / sqrt(12.566371 * CellProperties.rho[1]);
             // 12.566371 = 4 pi
-            CellProperties.v_p[1] = 0.0;  // zero initial ponderomotive-induced velocity
                         
             if( boundary_cell && CellProperties.s[1] >= INJECTION_HEIGHT )
             {    // Only set the boundary condition in a single grid cell -- zero elsewhere
