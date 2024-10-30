@@ -190,7 +190,7 @@ int iTemp;
 
 #ifdef TIME_VARIABLE_ABUNDANCES
 #ifdef PONDEROMOTIVE
-    low_FIP_abundance = pRadiation->GetLowFIPAbundance();
+    low_FIP_abundance = pRadiation->GetLowFIPAbundance() + pRadiation2->GetLowFIPAbundance();
 #endif // TIME_VARIABLE_ABUNDANCES
 #endif // PONDEROMOTIVE
 
@@ -707,6 +707,12 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
 
 	    // The time-step is calculated by the CFL condition
     	CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v[1] ) + CellProperties.Cs ) );
+        #ifdef TIME_VARIABLE_ABUNDANCES
+        #ifdef PONDEROMOTIVE
+        CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_p[1] ) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
+        #endif // PONDEROMOTIVE
+        #endif // TIME_VARIABLE_ABUNDANCES
+
 
 // *****************************************************************************
 // *    THERMAL CONDUCTION                                                     *
@@ -1414,6 +1420,11 @@ int j;
 
 	    // The time-step is calculated by the CFL condition
 		CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v[1] ) + CellProperties.Cs ) );
+        #ifdef TIME_VARIABLE_ABUNDANCES
+        #ifdef PONDEROMOTIVE
+        CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_p[1] ) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
+        #endif // PONDEROMOTIVE
+        #endif // TIME_VARIABLE_ABUNDANCES
 
 // *****************************************************************************
 // *    THERMAL CONDUCTION                                                     *
@@ -2716,9 +2727,9 @@ int j;
 
         // Now, calculate the cell-centered acceleration to be used by the next time step:
             // Calculate all of the preliminary variables first
-        //dvAbyds = (CellProperties.v_A[2] - CellProperties.v_A[0]) / CellProperties.cell_width;
+        dvAbyds = (CellProperties.v_A[2] - CellProperties.v_A[0]) / CellProperties.cell_width;
         drhobyds = (CellProperties.rho[2] - CellProperties.rho[0]) / CellProperties.cell_width;
-        dvAbyds = (CellProperties.v_A[1] - LeftCellProperties.v_A[1]) / (0.5 * (CellProperties.cell_width + LeftCellProperties.cell_width));
+        //dvAbyds = (CellProperties.v_A[1] - LeftCellProperties.v_A[1]) / (0.5 * (CellProperties.cell_width + LeftCellProperties.cell_width));
         //drhobyds = (CellProperties.rho[1] - LeftCellProperties.rho[1]) / (0.5 * (CellProperties.cell_width + LeftCellProperties.cell_width));
         dvbyds = (CellProperties.v[2] - CellProperties.v[0]) / CellProperties.cell_width;
         dvpbyds = (CellProperties.v_p[2] - CellProperties.v_p[0]) / CellProperties.cell_width;
@@ -2730,7 +2741,7 @@ int j;
         // Calculate the Elsasser I variables 
         for( j=0; j<=3; j++)
         {
-            if( abs(CellProperties.elsasser_I[j]) > 0.0 )
+            if( fabs(CellProperties.elsasser_I[j]) > 0.0 )
                 CellProperties.elsasser_I[j] = CellProperties.elsasser_I[j] + CellProperties.cell_width * LeftCellProperties.dIbyds[j];
             else
                 CellProperties.elsasser_I[j] = LeftCellProperties.elsasser_I[j] + CellProperties.cell_width * LeftCellProperties.dIbyds[j];
@@ -2749,9 +2760,7 @@ int j;
             for( j=0; j<=3; j++)
                 CellProperties.ponderomotive_a[1] += 0.25 * (CellProperties.elsasser_I[j] * CellProperties.dIbyds[j]);
         }
-        
-        // CellProperties.v_p[1] += CellProperties.ponderomotive_a[1] * (*delta_t);  
-        
+               
         // Add in the term for flows of a single species:
             // Does not depend on the cross-sectional area!
         CellProperties.dAFbydt += - CellProperties.v_p[1] * ( UpperValue - LowerValue ) / CellProperties.cell_width;
@@ -2766,7 +2775,7 @@ int j;
         CellProperties.dAFbydt += - ( CellProperties.AF[1] / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / CellProperties.cell_width;
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
 
-        CellProperties.dvpbydt = ponderomotive_a[1] - (CellProperties.v[1] + CellProperties.v_p[1]) * dvpbyds - CellProperties.v_p[1] * dvbyds;
+        CellProperties.dvpbydt = CellProperties.ponderomotive_a[1] - (CellProperties.v[1] + CellProperties.v_p[1]) * dvpbyds - CellProperties.v_p[1] * dvbyds;
 
         #endif // PONDEROMOTIVE
     
@@ -2802,7 +2811,8 @@ int j;
 
 #ifdef TIME_VARIABLE_ABUNDANCES
 #ifdef PONDEROMOTIVE
-        CellProperties.dvpbydt += (( AVERAGE_PARTICLE_MASS / (CellProperties.AF[1] * low_FIP_abundance) - 1.0 ) / CellProperties.rho[1]) * CellProperties.rho_v_term[1];
+        //CellProperties.dvpbydt += (( 1.2979612 / (CellProperties.AF[1] * low_FIP_abundance) - 1.0 ) / CellProperties.rho[1]) * CellProperties.rho_v_term[1];
+        //printf("pressure s %.4e dvp %.4e LFA %.4e\n", CellProperties.s[1], CellProperties.dvpbydt, low_FIP_abundance);
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -2827,7 +2837,7 @@ int j;
 
 #ifdef TIME_VARIABLE_ABUNDANCES
 #ifdef PONDEROMOTIVE
-        CellProperties.dvpbydt -= rho_v_term[3] / CellProperties.rho[1];
+        //CellProperties.dvpbydt -= CellProperties.rho_v_term[3] / CellProperties.rho[1];
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -2848,7 +2858,7 @@ int j;
         
 #ifdef TIME_VARIABLE_ABUNDANCES
 #ifdef PONDEROMOTIVE
-        CellProperties.dvpbydt -= rho_v_term[4] / CellProperties.rho[1];
+        //CellProperties.dvpbydt -= CellProperties.rho_v_term[4] / CellProperties.rho[1];
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -3144,7 +3154,7 @@ int j;
     	ppni4 = FarRightCellProperties.pIonFrac->ppGetIonFrac();
    
     	ppdnibydt = CellProperties.pIonFrac->ppGetdnibydt();
-		pRadiation->GetAlldnibydt( log10( CellProperties.T[ELECTRON] ), log10( CellProperties.n[ELECTRON] ), ppni0, ppni1, ppni2, ppni3, ppni4, ps, CellProperties.s, CellProperties.v, CellProperties.cell_width, ppdnibydt, &(CellProperties.atomic_delta_t) );
+    pRadiation->GetAlldnibydt( log10( CellProperties.T[ELECTRON] ), log10( CellProperties.n[ELECTRON] ), ppni0, ppni1, ppni2, ppni3, ppni4, ps, CellProperties.s, CellProperties.v, CellProperties.cell_width, ppdnibydt, &(CellProperties.atomic_delta_t) );
 #endif // NON_EQUILIBRIUM_RADIATION
 
 #ifdef OPTICALLY_THICK_RADIATION
