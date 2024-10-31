@@ -2201,8 +2201,6 @@ int j;
 	        		CellProperties.B[0] = QT;
 			}
             
-			LeftCellProperties.B[2] = CellProperties.B[0];
-
 	         CellProperties.v_A[0] = CellProperties.B[0] / sqrt(12.566371 * CellProperties.rho[0]);
                          
 			LeftCellProperties.B[2] = CellProperties.B[0];
@@ -2729,10 +2727,9 @@ int j;
             // Calculate all of the preliminary variables first
         dvAbyds = (CellProperties.v_A[2] - CellProperties.v_A[0]) / CellProperties.cell_width;
         drhobyds = (CellProperties.rho[2] - CellProperties.rho[0]) / CellProperties.cell_width;
-        //dvAbyds = (CellProperties.v_A[1] - LeftCellProperties.v_A[1]) / (0.5 * (CellProperties.cell_width + LeftCellProperties.cell_width));
-        //drhobyds = (CellProperties.rho[1] - LeftCellProperties.rho[1]) / (0.5 * (CellProperties.cell_width + LeftCellProperties.cell_width));
         dvbyds = (CellProperties.v[2] - CellProperties.v[0]) / CellProperties.cell_width;
         dvpbyds = (CellProperties.v_p[2] - CellProperties.v_p[0]) / CellProperties.cell_width;
+
         H_D = CellProperties.rho[1] / drhobyds;
         H_A = CellProperties.v_A[1] / dvAbyds;
         v_sum = CellProperties.v[1] + CellProperties.v_A[1];
@@ -2760,20 +2757,16 @@ int j;
             for( j=0; j<=3; j++)
                 CellProperties.ponderomotive_a[1] += 0.25 * (CellProperties.elsasser_I[j] * CellProperties.dIbyds[j]);
         }
-               
+            
         // Add in the term for flows of a single species:
             // Does not depend on the cross-sectional area!
-        CellProperties.dAFbydt += - CellProperties.v_p[1] * ( UpperValue - LowerValue ) / CellProperties.cell_width;
+        CellProperties.dAFbydt -= CellProperties.v_p[1] * ( UpperValue - LowerValue ) / CellProperties.cell_width;
     
         // Add in the fractionation term:
         LowerValue = CellProperties.rho[0] * CellProperties.v_p[0];
         UpperValue = CellProperties.rho[2] * CellProperties.v_p[2];
     
-        #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
-        CellProperties.dAFbydt += - ( CellProperties.AF[1] / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / fCellVolume;
-        #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
-        CellProperties.dAFbydt += - ( CellProperties.AF[1] / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / CellProperties.cell_width;
-        #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+        CellProperties.dAFbydt -= ( CellProperties.AF[1] / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / CellProperties.cell_width;
 
         CellProperties.dvpbydt = CellProperties.ponderomotive_a[1] - (CellProperties.v[1] + CellProperties.v_p[1]) * dvpbyds - CellProperties.v_p[1] * dvbyds;
 
@@ -3338,7 +3331,7 @@ int j;
     pCellProperties->AF[1] = BottomCellProperties.AF[1] +  ( delta_t * pCellProperties->dAFbydt );
     
     #ifdef PONDEROMOTIVE
-    pCellProperties->v_p[1] = BottomCellProperties.v_p[1] + (delta_t * pCellProperties->dvpbydt );
+    pCellProperties->v_p[1] = BottomCellProperties.v_p[1] + ( delta_t * pCellProperties->dvpbydt );
     #endif // PONDEROMOTIVE
     
 #endif // TIME_VARIABLE_ABUNDANCES

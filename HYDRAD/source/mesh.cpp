@@ -369,7 +369,7 @@ do {
 #ifdef TIME_VARIABLE_ABUNDANCES
                  NewCellProperties[0].AF[1] = ( CellProperties.AF[1] + RightCellProperties.AF[1] ) / 2.0;
 #ifdef PONDEROMOTIVE
-                 NewCellProperties[0].v_p[1] = ( CellProperties.v_p[1] + RightCellProperties.v[1] ) / 2.0;
+                 NewCellProperties[0].v_p[1] = ( CellProperties.v_p[1] + RightCellProperties.v_p[1] ) / 2.0;
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
