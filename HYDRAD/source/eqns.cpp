@@ -2729,7 +2729,7 @@ int j;
         drhobyds = (CellProperties.rho[2] - CellProperties.rho[0]) / CellProperties.cell_width;
         dvbyds = (CellProperties.v[2] - CellProperties.v[0]) / CellProperties.cell_width;
         dvpbyds = (CellProperties.v_p[2] - CellProperties.v_p[0]) / CellProperties.cell_width;
-
+        
         H_D = CellProperties.rho[1] / drhobyds;
         H_A = CellProperties.v_A[1] / dvAbyds;
         v_sum = CellProperties.v[1] + CellProperties.v_A[1];
