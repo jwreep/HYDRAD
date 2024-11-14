@@ -253,7 +253,7 @@ void CAdaptiveMesh::Adapt( void )
 {
 PCELL pNextActiveCell, pFarLeftCell, pLeftCell, pRightCell, pFarRightCell, pNewCell[2];
 CELLPROPERTIES FarLeftCellProperties, LeftCellProperties, CellProperties, RightCellProperties, FarRightCellProperties, NewCellProperties[2];
-double drho = 0.0, dTE_KEe = 0.0, dTE_KEh = 0.0, drho_e = 0.0, dAF = 0.0, drho_LF = 0.0, dvp = 0.0, x[6], y[6];
+double drho = 0.0, dTE_KEe = 0.0, dTE_KEh = 0.0, drho_e = 0.0, dAF = 0.0, drho_LF = 0.0, x[6], y[6];
 int iProlonged, iRestricted, j;
 
 #ifdef NON_EQUILIBRIUM_RADIATION
@@ -314,8 +314,7 @@ do {
             dAF = 1.0 - ( min( CellProperties.AF[1], RightCellProperties.AF[1] ) / max( CellProperties.AF[1], RightCellProperties.AF[1] ) );
             drho_LF = 1.0 - ( min( CellProperties.AF[1]*CellProperties.rho[1], RightCellProperties.AF[1]*RightCellProperties.rho[1] ) / max( CellProperties.AF[1]*CellProperties.rho[1], RightCellProperties.AF[1]*RightCellProperties.rho[1] ) );
 #endif // TIME_VARIABLE_ABUNDANCES && PONDEROMOTIVE
-            //if( drho < MIN_FRAC_DIFF && dTE_KEe < MIN_FRAC_DIFF && dTE_KEh < MIN_FRAC_DIFF && drho_e < MIN_FRAC_DIFF && dAF < MIN_FRAC_DIFF && drho_LF < MIN_FRAC_DIFF )
-            if( drho < MIN_FRAC_DIFF && dTE_KEe < MIN_FRAC_DIFF && dTE_KEh < MIN_FRAC_DIFF && drho_e < MIN_FRAC_DIFF && dAF < MIN_FRAC_DIFF && drho_LF < MIN_FRAC_DIFF )
+            if( drho < MIN_FRAC_DIFF && dTE_KEe < MIN_FRAC_DIFF && dTE_KEh < MIN_FRAC_DIFF && drho_e < MIN_FRAC_DIFF && dAF < MIN_FRAC_DIFF && drho_LF < MIN_FRAC_DIFF)
             {
                 iProlonged = TRUE;
 				Params.iNumberOfCells--;
@@ -480,7 +479,7 @@ do {
         drho_LF = 1.0 - ( min( CellProperties.AF[1]*CellProperties.rho[1], RightCellProperties.AF[1]*RightCellProperties.rho[1] ) / max( CellProperties.AF[1]*CellProperties.rho[1], RightCellProperties.AF[1]*RightCellProperties.rho[1] ) );
 #endif // TIME_VARIABLE_ABUNDANCES && PONDEROMOTIVE
 
-		if( ( drho > MAX_FRAC_DIFF || dTE_KEe > MAX_FRAC_DIFF || dTE_KEh > MAX_FRAC_DIFF || drho_e > MAX_FRAC_DIFF || dAF > MAX_FRAC_DIFF || drho_LF > MAX_FRAC_DIFF || dvp > MAX_FRAC_DIFF || abs( CellProperties.iRefinementLevel - RightCellProperties.iRefinementLevel ) > 1 ) && ( CellProperties.iRefinementLevel < MAX_REFINEMENT_LEVEL || RightCellProperties.iRefinementLevel < MAX_REFINEMENT_LEVEL ) )
+		if( ( drho > MAX_FRAC_DIFF || dTE_KEe > MAX_FRAC_DIFF || dTE_KEh > MAX_FRAC_DIFF || drho_e > MAX_FRAC_DIFF || dAF > MAX_FRAC_DIFF || drho_LF > MAX_FRAC_DIFF || abs( CellProperties.iRefinementLevel - RightCellProperties.iRefinementLevel ) > 1 ) && ( CellProperties.iRefinementLevel < MAX_REFINEMENT_LEVEL || RightCellProperties.iRefinementLevel < MAX_REFINEMENT_LEVEL ) )
 		{
             iRestricted = TRUE;
 			Params.iNumberOfCells++;
@@ -2152,11 +2151,11 @@ pAbundFile = fopen( szAbundFilename, "w" );
 
 #ifdef PONDEROMOTIVE
 #ifdef WRITE_FILE_PONDEROMOTIVE
-#endif // WRITE_FILE_PONDEROMOTIVE
 FILE *pPonderoFile;
 char szPonderoFilename[256];
 sprintf( szPonderoFilename, "Results/profile%i.pdr", iFileNumber );
 pPonderoFile = fopen ( szPonderoFilename, "w" );
+#endif // WRITE_FILE_PONDEROMOTIVE
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -2310,8 +2309,8 @@ fclose( pAbundFile );
 
 #ifdef PONDEROMOTIVE
 #ifdef WRITE_FILE_PONDEROMOTIVE
-#endif // WRITE_FILE_PONDEROMOTIVE
 fclose( pPonderoFile );
+#endif // WRITE_FILE_PONDEROMOTIVE
 #endif // PONDEROMOTIVE
 
 #endif // TIME_VARIABLE_ABUNDANCES

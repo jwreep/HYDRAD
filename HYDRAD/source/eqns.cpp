@@ -709,7 +709,9 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
     	CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v[1] ) + CellProperties.Cs ) );
         #ifdef TIME_VARIABLE_ABUNDANCES
         #ifdef PONDEROMOTIVE
-        CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_p[1] ) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
+        //CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_p[1] ) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
+        CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_A[1] ) + fabs(CellProperties.v_p[1]) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
+        if( CellProperties.AF[1] > 1.0 ) CellProperties.advection_delta_t /= CellProperties.AF[1];
         #endif // PONDEROMOTIVE
         #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -1422,7 +1424,9 @@ int j;
 		CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v[1] ) + CellProperties.Cs ) );
         #ifdef TIME_VARIABLE_ABUNDANCES
         #ifdef PONDEROMOTIVE
-        CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_p[1] ) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
+        //CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_p[1] ) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
+        CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_A[1] ) + fabs(CellProperties.v_p[1]) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
+        if( CellProperties.AF[1] > 1.0 ) CellProperties.advection_delta_t /= CellProperties.AF[1];
         #endif // PONDEROMOTIVE
         #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -2732,16 +2736,18 @@ int j;
         
         H_D = CellProperties.rho[1] / drhobyds;
         H_A = CellProperties.v_A[1] / dvAbyds;
-        v_sum = CellProperties.v[1] + CellProperties.v_A[1];
-        v_diff = CellProperties.v[1] - CellProperties.v_A[1];
+        //v_sum = CellProperties.v[1] + CellProperties.v_A[1];
+        //v_diff = CellProperties.v[1] - CellProperties.v_A[1];
+        v_sum = CellProperties.v[1] + CellProperties.v_p[1] + CellProperties.v_A[1];
+        v_diff = CellProperties.v[1] + CellProperties.v_p[1] - CellProperties.v_A[1];
         
         // Calculate the Elsasser I variables 
         for( j=0; j<=3; j++)
         {
             if( fabs(CellProperties.elsasser_I[j]) > 0.0 )
-                CellProperties.elsasser_I[j] = CellProperties.elsasser_I[j] + CellProperties.cell_width * LeftCellProperties.dIbyds[j];
+                CellProperties.elsasser_I[j] = CellProperties.elsasser_I[j] + LeftCellProperties.cell_width * LeftCellProperties.dIbyds[j];
             else
-                CellProperties.elsasser_I[j] = LeftCellProperties.elsasser_I[j] + CellProperties.cell_width * LeftCellProperties.dIbyds[j];
+                CellProperties.elsasser_I[j] = LeftCellProperties.elsasser_I[j] + LeftCellProperties.cell_width * LeftCellProperties.dIbyds[j];
         }
         // Calculate the spatial gradients of the Elsasser I variables
         CellProperties.dIbyds[0] = (v_sum * (CellProperties.elsasser_I[0]/(4.0 * H_D) + CellProperties.elsasser_I[1]/(2.0 * H_A)) + WAVE_FREQUENCY * CellProperties.elsasser_I[2] ) / v_diff;
@@ -2769,7 +2775,7 @@ int j;
         CellProperties.dAFbydt -= ( CellProperties.AF[1] / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / CellProperties.cell_width;
 
         CellProperties.dvpbydt = CellProperties.ponderomotive_a[1] - (CellProperties.v[1] + CellProperties.v_p[1]) * dvpbyds - CellProperties.v_p[1] * dvbyds;
-
+        
         #endif // PONDEROMOTIVE
     
 #endif // TIME_VARIABLE_ABUNDANCES
@@ -3063,6 +3069,7 @@ int j;
 // **** RADIATION TIME STEP ****
 	    		CellProperties.radiation_delta_t = ( SAFETY_RADIATION * CellProperties.TE_KE[1][ELECTRON] ) / fabs( CellProperties.TE_KE_term[5][ELECTRON] );
 // **** RADIATION TIME STEP ****
+            
 		}	// Closes the else '{' on line 2474 column 10 or line 2485 column 14, depending on the active pre-processor directives
 
 // *****************************************************************************
