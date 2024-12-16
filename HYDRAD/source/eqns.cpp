@@ -707,13 +707,13 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
 
 	    // The time-step is calculated by the CFL condition
     	CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v[1] ) + CellProperties.Cs ) );
-        #ifdef TIME_VARIABLE_ABUNDANCES
-        #ifdef PONDEROMOTIVE
+        //#ifdef TIME_VARIABLE_ABUNDANCES
+        //#ifdef PONDEROMOTIVE
         //CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_p[1] ) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
-        CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_A[1] ) + fabs(CellProperties.v_p[1]) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
-        if( CellProperties.AF[1] > 1.0 ) CellProperties.advection_delta_t /= CellProperties.AF[1];
-        #endif // PONDEROMOTIVE
-        #endif // TIME_VARIABLE_ABUNDANCES
+        //CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_A[1] ) + fabs(CellProperties.v_p[1]) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
+        //if( CellProperties.AF[1] > 1.0 ) CellProperties.advection_delta_t /= CellProperties.AF[1];
+        //#endif // PONDEROMOTIVE
+        //#endif // TIME_VARIABLE_ABUNDANCES
 
 
 // *****************************************************************************
@@ -1422,13 +1422,13 @@ int j;
 
 	    // The time-step is calculated by the CFL condition
 		CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v[1] ) + CellProperties.Cs ) );
-        #ifdef TIME_VARIABLE_ABUNDANCES
-        #ifdef PONDEROMOTIVE
+        //#ifdef TIME_VARIABLE_ABUNDANCES
+        //#ifdef PONDEROMOTIVE
         //CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_p[1] ) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
-        CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_A[1] ) + fabs(CellProperties.v_p[1]) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
-        if( CellProperties.AF[1] > 1.0 ) CellProperties.advection_delta_t /= CellProperties.AF[1];
-        #endif // PONDEROMOTIVE
-        #endif // TIME_VARIABLE_ABUNDANCES
+        //CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_A[1] ) + fabs(CellProperties.v_p[1]) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
+        //if( CellProperties.AF[1] > 1.0 ) CellProperties.advection_delta_t /= CellProperties.AF[1];
+        //#endif // PONDEROMOTIVE
+        //#endif // TIME_VARIABLE_ABUNDANCES
 
 // *****************************************************************************
 // *    THERMAL CONDUCTION                                                     *
@@ -2736,10 +2736,10 @@ int j;
         
         H_D = CellProperties.rho[1] / drhobyds;
         H_A = CellProperties.v_A[1] / dvAbyds;
-        //v_sum = CellProperties.v[1] + CellProperties.v_A[1];
-        //v_diff = CellProperties.v[1] - CellProperties.v_A[1];
-        v_sum = CellProperties.v[1] + CellProperties.v_p[1] + CellProperties.v_A[1];
-        v_diff = CellProperties.v[1] + CellProperties.v_p[1] - CellProperties.v_A[1];
+        v_sum = CellProperties.v[1] + CellProperties.v_A[1];
+        v_diff = CellProperties.v[1] - CellProperties.v_A[1];
+        //v_sum = CellProperties.v[1] + CellProperties.v_p[1] + CellProperties.v_A[1];
+        //v_diff = CellProperties.v[1] + CellProperties.v_p[1] - CellProperties.v_A[1];
         
         // Calculate the Elsasser I variables 
         for( j=0; j<=3; j++)
@@ -2766,15 +2766,15 @@ int j;
             
         // Add in the term for flows of a single species:
             // Does not depend on the cross-sectional area!
-        CellProperties.dAFbydt -= CellProperties.v_p[1] * ( UpperValue - LowerValue ) / CellProperties.cell_width;
+        //CellProperties.dAFbydt -= CellProperties.v_p[1] * ( UpperValue - LowerValue ) / CellProperties.cell_width;
     
         // Add in the fractionation term:
-        LowerValue = CellProperties.rho[0] * CellProperties.v_p[0];
-        UpperValue = CellProperties.rho[2] * CellProperties.v_p[2];
+        //LowerValue = CellProperties.rho[0] * CellProperties.v_p[0];
+        //UpperValue = CellProperties.rho[2] * CellProperties.v_p[2];
     
-        CellProperties.dAFbydt -= ( CellProperties.AF[1] / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / CellProperties.cell_width;
+        //CellProperties.dAFbydt -= ( CellProperties.AF[1] / CellProperties.rho[1] ) * ( UpperValue - LowerValue ) / CellProperties.cell_width;
 
-        CellProperties.dvpbydt = CellProperties.ponderomotive_a[1] - (CellProperties.v[1] + CellProperties.v_p[1]) * dvpbyds - CellProperties.v_p[1] * dvbyds;
+        //CellProperties.dvpbydt = CellProperties.ponderomotive_a[1] - (CellProperties.v[1] + CellProperties.v_p[1]) * dvpbyds - CellProperties.v_p[1] * dvbyds;
         
         #endif // PONDEROMOTIVE
     
@@ -3291,7 +3291,8 @@ pActiveCell->GetCellProperties( &CellProperties );
     pNewCellProperties->AF[1] = CellProperties.AF[1] +  ( delta_t * CellProperties.dAFbydt );
     
     #ifdef PONDEROMOTIVE
-    pNewCellProperties->v_p[1] = CellProperties.v_p[1] + ( delta_t * CellProperties.dvpbydt );
+    //pNewCellProperties->v_p[1] = CellProperties.v_p[1] + ( delta_t * CellProperties.dvpbydt );
+    pNewCellProperties->v_p[1] = CellProperties.v_p[1];
     #endif // PONDEROMOTIVE
     
 #endif // TIME_VARIABLE_ABUNDANCES
@@ -3338,7 +3339,8 @@ int j;
     pCellProperties->AF[1] = BottomCellProperties.AF[1] +  ( delta_t * pCellProperties->dAFbydt );
     
     #ifdef PONDEROMOTIVE
-    pCellProperties->v_p[1] = BottomCellProperties.v_p[1] + ( delta_t * pCellProperties->dvpbydt );
+    //pCellProperties->v_p[1] = BottomCellProperties.v_p[1] + ( delta_t * pCellProperties->dvpbydt );
+    pCellProperties->v_p[1] = BottomCellProperties.v_p[1];
     #endif // PONDEROMOTIVE
     
 #endif // TIME_VARIABLE_ABUNDANCES
