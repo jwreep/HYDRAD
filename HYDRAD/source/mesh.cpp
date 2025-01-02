@@ -368,6 +368,11 @@ do {
 
 #if defined(BEAM_HEATING) && defined(KINETIC_BEAM)
                 NewCellProperties[0].beam_Qe = ( CellProperties.beam_Qe + RightCellProperties.beam_Qe ) / 2.0;
+                for( j=0; j < N_NT_ENERGY; ++j )
+                {
+                    NewCellProperties[0].nt_energy[j] = ( CellProperties.nt_energy[j] + RightCellProperties.nt_energy[j] ) / 2.0;
+                    NewCellProperties[0].F_ex[j] = ( CellProperties.F_ex[j] + RightCellProperties.F_ex[j] ) / 2.0;
+                }
 #ifdef RETURN_CURRENT
                 NewCellProperties[0].beam_QH = ( CellProperties.beam_QH + RightCellProperties.beam_QH ) / 2.0;
 #endif // RETURN_CURRENT
@@ -516,6 +521,23 @@ do {
 				NewCellProperties[1].s[1] = NewCellProperties[1].s[0] + ( 0.5 * NewCellProperties[1].cell_width );
 				NewCellProperties[1].s[2] = CellProperties.s[2];
 		
+#ifdef KINETIC_BEAM
+#ifdef WRITE_FILE_KINETIC_BEAM
+                for( j = 0; j < N_NT_ENERGY; ++j )
+                {   // This calculation has no effect on the hydrodynamics since the heating is
+                    // properly interpolated below.  These are simply so that the .bm files do not print
+                    // out zeroes in refined cells.  It could be properly interpolated, but would require
+                    // a few hundred interpolations for something that doesn't effect the simulation itself -- 
+                    // which is an unnecessary waste of time.  So, we simply let the new cells have the 
+                    // initial cell's values for the beam energy/flux.
+                    NewCellProperties[0].nt_energy[j] = CellProperties.nt_energy[j];
+                    NewCellProperties[1].nt_energy[j] = CellProperties.nt_energy[j];
+                    NewCellProperties[0].F_ex[j] = CellProperties.F_ex[j];
+                    NewCellProperties[1].F_ex[j] = CellProperties.F_ex[j];
+                }
+#endif // WRITE_FILE_KINETIC_BEAM
+#endif // KINETIC_BEAM
+        
 				pLeftCell = pActiveCell->pGetPointer( LEFT );
 
 				if( pLeftCell )
@@ -1059,6 +1081,23 @@ do {
 				NewCellProperties[1].s[0] = CellProperties.s[1];
 				NewCellProperties[1].s[1] = NewCellProperties[1].s[0] + ( 0.5 * NewCellProperties[1].cell_width );
 				NewCellProperties[1].s[2] = CellProperties.s[2];
+
+#ifdef KINETIC_BEAM
+#ifdef WRITE_FILE_KINETIC_BEAM
+                for( j = 0; j < N_NT_ENERGY; ++j )
+                {   // This calculation has no effect on the hydrodynamics since the heating is
+                    // properly interpolated below.  These are simply so that the .bm files do not print
+                    // out zeroes in refined cells.  It could be properly interpolated, but would require
+                    // a few hundred interpolations for something that doesn't effect the simulation itself -- 
+                    // which is an unnecessary waste of time.  So, we simply let the new cells have the 
+                    // initial cell's values for the beam energy/flux.
+                    NewCellProperties[0].nt_energy[j] = CellProperties.nt_energy[j];
+                    NewCellProperties[1].nt_energy[j] = CellProperties.nt_energy[j];
+                    NewCellProperties[0].F_ex[j] = CellProperties.F_ex[j];
+                    NewCellProperties[1].F_ex[j] = CellProperties.F_ex[j];
+                }
+#endif // WRITE_FILE_KINETIC_BEAM
+#endif // KINETIC_BEAM
 
 				pRightCell = pActiveCell->pGetPointer( RIGHT );
 
