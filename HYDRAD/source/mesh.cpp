@@ -520,7 +520,8 @@ do {
 				NewCellProperties[1].s[0] = CellProperties.s[1];
 				NewCellProperties[1].s[1] = NewCellProperties[1].s[0] + ( 0.5 * NewCellProperties[1].cell_width );
 				NewCellProperties[1].s[2] = CellProperties.s[2];
-		
+
+#ifdef BEAM_HEATING
 #ifdef KINETIC_BEAM
 #ifdef WRITE_FILE_KINETIC_BEAM
                 for( j = 0; j < N_NT_ENERGY; ++j )
@@ -537,6 +538,7 @@ do {
                 }
 #endif // WRITE_FILE_KINETIC_BEAM
 #endif // KINETIC_BEAM
+#endif // BEAM_HEATING
         
 				pLeftCell = pActiveCell->pGetPointer( LEFT );
 
@@ -1082,6 +1084,7 @@ do {
 				NewCellProperties[1].s[1] = NewCellProperties[1].s[0] + ( 0.5 * NewCellProperties[1].cell_width );
 				NewCellProperties[1].s[2] = CellProperties.s[2];
 
+#ifdef BEAM_HEATING
 #ifdef KINETIC_BEAM
 #ifdef WRITE_FILE_KINETIC_BEAM
                 for( j = 0; j < N_NT_ENERGY; ++j )
@@ -1098,6 +1101,7 @@ do {
                 }
 #endif // WRITE_FILE_KINETIC_BEAM
 #endif // KINETIC_BEAM
+#endif // BEAM_HEATING
 
 				pRightCell = pActiveCell->pGetPointer( RIGHT );
 
