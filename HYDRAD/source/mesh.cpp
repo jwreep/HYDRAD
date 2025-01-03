@@ -2264,7 +2264,7 @@ while( pNextActiveCell )
 #ifdef WRITE_FILE_PONDEROMOTIVE
     fprintf( pPonderoFile, "%.8e", CellProperties.s[1] );
     fprintf( pPonderoFile, "\t%.8e", CellProperties.v_p[1] );
-    fprintf( pPonderoFile, "\t%.8e", CellProperties.ponderomotive_a[1] );
+    fprintf( pPonderoFile, "\t%.8e", CellProperties.ponderomotive_a );
     fprintf( pPonderoFile, "\n" );
 #endif // WRITE_FILE_PONDEROMOTIVE
 #endif // PONDEROMOTIVE
