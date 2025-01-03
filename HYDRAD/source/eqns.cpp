@@ -2864,6 +2864,24 @@ int j;
 		// Calculate the time derivative
     	CellProperties.drho_vbydt = CellProperties.rho_v_term[0] + CellProperties.rho_v_term[1] + CellProperties.rho_v_term[2] + CellProperties.rho_v_term[3] + CellProperties.rho_v_term[4];
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+#ifdef PONDEROMOTIVE
+// *****************************************************************************
+// *    PONDEROMOTIVE ACCELERATION                                             *
+// *****************************************************************************
+        // The ponderomotive acceleration of low FIP elements affects the bulk momentum as well, so we need to add
+        // this term into the total momentum equation.  
+        
+        //CellProperties.rho_v_term[5] = ( low_FIP_abundance * CellProperties.rho[1] * CellProperties.ponderomotive_a[1] * CellProperties.AF[1] ) / AVERAGE_PARTICLE_MASS;
+        //CellProperties.drho_vbydt += CellProperties.rho_v_term[5];
+        
+        // At the moment, we don't use an independent term so as to not affect the format of the .AMR files.
+        CellProperties.drho_vbydt += ( low_FIP_abundance * CellProperties.rho[1] * CellProperties.ponderomotive_a[1] * CellProperties.AF[1] ) / AVERAGE_PARTICLE_MASS;
+         
+#endif // PONDEROMOTIVE
+#endif // TIME_VARIABLE_ABUNDANCES
+
+
 // *****************************************************************************
 // *    																	   *
 // *    ENERGY CONSERVATION                                                    *

@@ -25,7 +25,13 @@
 #define HYDROGEN		1		// The array index to reference the hydrogen species
 
 #define MASS_TERMS		1		// The number of terms in the mass conservation equation
-#define MOMENTUM_TERMS  5		// The number of terms in the momentum conservation equation
+
+//#ifndef PONDEROMOTIVE
+    #define MOMENTUM_TERMS  5		// The number of terms in the momentum conservation equation
+//#else // PONDEROMOTIVE
+//    #define MOMENTUM_TERMS  6     // The number of terms in the momentum conservation equation, with one extra for ponderomotive acceleration
+//#endif // PONDEROMOTIVE
+
 #define ENERGY_TERMS    10		// The number of terms in the energy conservation equations
 
 // **** ADAPTIVE MESH CELL PROPERTIES ****
