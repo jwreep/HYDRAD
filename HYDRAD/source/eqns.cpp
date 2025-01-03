@@ -2872,11 +2872,12 @@ int j;
         // The ponderomotive acceleration of low FIP elements affects the bulk momentum as well, so we need to add
         // this term into the total momentum equation.  
         
-        //CellProperties.rho_v_term[5] = ( low_FIP_abundance * CellProperties.rho[1] * CellProperties.ponderomotive_a[1] * CellProperties.AF[1] ) / AVERAGE_PARTICLE_MASS;
+        // 1.2943705 = AVERAGE_PARTICLE_MASS / PROTON_MASS
+        //CellProperties.rho_v_term[5] = ( low_FIP_abundance * CellProperties.rho[1] * CellProperties.ponderomotive_a[1] * CellProperties.AF[1] ) / 1.2943705;
         //CellProperties.drho_vbydt += CellProperties.rho_v_term[5];
         
         // At the moment, we don't use an independent term so as to not affect the format of the .AMR files.
-        CellProperties.drho_vbydt += ( low_FIP_abundance * CellProperties.rho[1] * CellProperties.ponderomotive_a[1] * CellProperties.AF[1] ) / AVERAGE_PARTICLE_MASS;
+        CellProperties.drho_vbydt += ( low_FIP_abundance * CellProperties.rho[1] * CellProperties.ponderomotive_a[1] * CellProperties.AF[1] ) / 1.2943705;
          
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
