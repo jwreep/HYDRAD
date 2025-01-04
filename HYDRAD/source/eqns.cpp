@@ -300,6 +300,7 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
              //CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
              CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
+         CellProperties.rho_f[1] = CellProperties.AF[1] * CellProperties.rho[1];
          #ifdef PONDEROMOTIVE
             
             #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
@@ -311,7 +312,8 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
             CellProperties.v_A[1] = CellProperties.B[1] / sqrt(12.566371 * CellProperties.rho[1]);
             // 12.566371 = 4 pi
             CellProperties.v_p[1] = 0.0;  // zero initial ponderomotive-induced velocity
-                        
+            CellProperties.rho_vp_f[1] = CellProperties.rho_f[1] * CellProperties.v_p[1];
+            
             if( boundary_cell && CellProperties.s[1] >= INJECTION_HEIGHT )
             {    // Only set the boundary condition in a single grid cell -- zero elsewhere
                 CellProperties.elsasser_I[0] = WAVE_AMPLITUDE;
@@ -362,6 +364,9 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
              //CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
              CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
+         
+         CellProperties.rho_f[1] = CellProperties.AF[1] * CellProperties.rho[1];
+         
          #ifdef PONDEROMOTIVE
             
             #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
@@ -373,7 +378,8 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
             CellProperties.v_A[1] = CellProperties.B[1] / sqrt(12.566371 * CellProperties.rho[1]);
             // 12.566371 = 4 pi
             CellProperties.v_p[1] = 0.0;  // zero initial ponderomotive-induced velocity
-                        
+            CellProperties.rho_vp_f[1] = CellProperties.rho_f[1] * CellProperties.v_p[1];
+            
             if( boundary_cell && CellProperties.s[1] >= INJECTION_HEIGHT )
             {    // Only set the boundary condition in a single grid cell -- zero elsewhere
                 CellProperties.elsasser_I[0] = WAVE_AMPLITUDE;
@@ -581,9 +587,9 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
 	    CellProperties.v[1] = CellProperties.rho_v[1] / CellProperties.rho[1];
 
         #ifdef TIME_VARIABLE_ABUNDANCES
-        CellProperties.AF[1] = CellProperties.rho_f / CellProperties.rho[1];
+        CellProperties.AF[1] = CellProperties.rho_f[1] / CellProperties.rho[1];
         #ifdef PONDEROMOTIVE
-        CellProperties.v_p[1] = CellProperties.rho_vp_f / CellProperties.rho_f;
+        CellProperties.v_p[1] = CellProperties.rho_vp_f[1] / CellProperties.rho_f[1];
         #endif // PONDEROMOTIVE
         #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -716,7 +722,7 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
     	CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v[1] ) + CellProperties.Cs ) );
         #ifdef TIME_VARIABLE_ABUNDANCES
         #ifdef PONDEROMOTIVE
-        //CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_p[1] ) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
+        CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_p[1] ) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
         //CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_A[1] ) + fabs(CellProperties.v_p[1]) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
         //if( CellProperties.AF[1] > 1.0 ) CellProperties.advection_delta_t /= CellProperties.AF[1];
         #endif // PONDEROMOTIVE
@@ -1134,9 +1140,9 @@ int j;
 
         #ifdef TIME_VARIABLE_ABUNDANCES
 
-        CellProperties.AF[1] = CellProperties.rho_f / CellProperties.rho[1];
+        CellProperties.AF[1] = CellProperties.rho_f[1] / CellProperties.rho[1];
         #ifdef PONDEROMOTIVE
-        CellProperties.v_p[1] = CellProperties.rho_vp_f / CellProperties.rho_f;
+        CellProperties.v_p[1] = CellProperties.rho_vp_f[1] / CellProperties.rho_f[1];
         #endif // PONDEROMOTIVE
 
         if( CellProperties.AF[1] <= 0.0 ) 
@@ -1159,6 +1165,12 @@ int j;
                 //CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
                 CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
             }
+            
+            CellProperties.rho_f[1] = CellProperties.AF[1] * CellProperties.rho[1];
+            #ifdef PONDEROMOTIVE
+            CellProperties.v_p[1] = 0.0;
+            CellProperties.rho_vp_f[1] = CellProperties.rho_f[1] * CellProperties.v_p[1]; 
+            #endif // PONDEROMOTIVE
         }
         #ifdef PONDEROMOTIVE
             #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
@@ -1437,7 +1449,7 @@ int j;
 		CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v[1] ) + CellProperties.Cs ) );
         #ifdef TIME_VARIABLE_ABUNDANCES
         #ifdef PONDEROMOTIVE
-        //CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_p[1] ) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
+        CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_p[1] ) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
         //CellProperties.advection_delta_t = SAFETY_ADVECTION * ( CellProperties.cell_width / ( fabs( CellProperties.v_A[1] ) + fabs(CellProperties.v_p[1]) + fabs(CellProperties.v[1]) + CellProperties.Cs ) );
         //if( CellProperties.AF[1] > 1.0 ) CellProperties.advection_delta_t /= CellProperties.AF[1];
         #endif // PONDEROMOTIVE
@@ -1877,6 +1889,42 @@ int j;
 			LeftCellProperties.rho[2] = CellProperties.rho[0];
             
             #ifdef TIME_VARIABLE_ABUNDANCES
+      
+            // CALCULATE THE LOW FIP MASS DENSITY
+	        x[1] = FarLeftCellProperties.s[1];
+			x[2] = LeftCellProperties.s[1];
+			y[1] = FarLeftCellProperties.rho_f[1];
+			y[2] = LeftCellProperties.rho_f[1];
+			LinearFit( x, y, CellProperties.s[0], &Q1 );
+
+			x[1] = LeftCellProperties.s[1];
+			x[2] = CellProperties.s[1];
+			y[1] = LeftCellProperties.rho_f[1];
+			y[2] = CellProperties.rho_f[1];
+			LinearFit( x, y, CellProperties.s[0], &Q2 );
+
+	        Q3 = y[1];
+
+			if( y[2] <= y[1] )
+			{
+		    	QT = max( Q1, Q2 );
+			    if( Q3 < QT )
+		    	    CellProperties.rho_f[0] = Q3;
+	    		else
+	        		CellProperties.rho_f[0] = QT;
+			}
+			else
+			{
+	    		QT = min( Q1, Q2 );
+		    	if( Q3 > QT )
+		        	CellProperties.rho_f[0] = Q3;
+	    		else
+	        		CellProperties.rho_f[0] = QT;
+			}
+	        
+			LeftCellProperties.rho_f[2] = CellProperties.rho_f[0];
+
+
             // CALCULATE THE ABUNDANCE FACTOR
 	 
 	        x[1] = FarLeftCellProperties.s[1];
@@ -1913,6 +1961,40 @@ int j;
 			LeftCellProperties.AF[2] = CellProperties.AF[0];
            
             #ifdef PONDEROMOTIVE
+
+            // CALCULATE THE LOW FIP MOMENTUM DENSITY
+	        x[1] = FarLeftCellProperties.s[1];
+			x[2] = LeftCellProperties.s[1];
+			y[1] = FarLeftCellProperties.rho_vp_f[1];
+			y[2] = LeftCellProperties.rho_vp_f[1];
+			LinearFit( x, y, CellProperties.s[0], &Q1 );
+
+			x[1] = LeftCellProperties.s[1];
+			x[2] = CellProperties.s[1];
+			y[1] = LeftCellProperties.rho_vp_f[1];
+			y[2] = CellProperties.rho_vp_f[1];
+			LinearFit( x, y, CellProperties.s[0], &Q2 );
+
+	        Q3 = y[1];
+
+			if( y[2] <= y[1] )
+			{
+		    	QT = max( Q1, Q2 );
+			    if( Q3 < QT )
+		    	    CellProperties.rho_vp_f[0] = Q3;
+	    		else
+	        		CellProperties.rho_vp_f[0] = QT;
+			}
+			else
+			{
+	    		QT = min( Q1, Q2 );
+		    	if( Q3 > QT )
+		        	CellProperties.rho_vp_f[0] = Q3;
+	    		else
+	        		CellProperties.rho_vp_f[0] = QT;
+			}
+	        
+			LeftCellProperties.rho_vp_f[2] = CellProperties.rho_vp_f[0];
 
             // CALCULATE THE FIELD STRENGTH AND ALFVEN SPEED
              x[1] = FarLeftCellProperties.s[1];
@@ -2089,6 +2171,52 @@ int j;
 			LeftCellProperties.rho[2] = CellProperties.rho[0];
 		
             #ifdef TIME_VARIABLE_ABUNDANCES
+            
+            // CALCULATE THE LOW FIP MASS DENSITY
+	        
+	        x[1] = CellProperties.s[1];
+			x[2] = RightCellProperties.s[1];
+			y[1] = CellProperties.rho_f[1];
+			y[2] = RightCellProperties.rho_f[1];
+#ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+			y[1] *= fCrossSection[2];
+			y[2] *= fCrossSection[3];
+#endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+			LinearFit( x, y, CellProperties.s[0], &Q1 );
+
+			x[1] = LeftCellProperties.s[1];
+			x[2] = CellProperties.s[1];
+			y[1] = LeftCellProperties.rho_f[1];
+			y[2] = CellProperties.rho_f[1];
+#ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+			y[1] *= fCrossSection[1];
+			y[2] *= fCrossSection[2];
+#endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+			LinearFit( x, y, CellProperties.s[0], &Q2 );
+
+	        Q3 = y[2];
+
+			// Note: The flow is in the opposite direction and so the conditional is switched
+			if( y[1] <= y[2] )
+			{
+    	        QT = max( Q1, Q2 );
+	    		if( Q3 < QT )
+	        		CellProperties.rho_f[0] = Q3;
+	    		else
+	        		CellProperties.rho_f[0] = QT;
+			}
+			else
+			{
+	    		QT = min( Q1, Q2 );
+		    	if( Q3 > QT )
+		        	CellProperties.rho_f[0] = Q3;
+	    		else
+	        		CellProperties.rho_f[0] = QT;
+			}
+
+			LeftCellProperties.rho_f[2] = CellProperties.rho_f[0];
+
+            
             // CALCULATE THE ABUNDANCE FACTOR
 	        
 	        x[1] = CellProperties.s[1];
@@ -2126,7 +2254,51 @@ int j;
 			LeftCellProperties.AF[2] = CellProperties.AF[0];
             
             #ifdef PONDEROMOTIVE
+            
+            // CALCULATE THE LOW FIP MOMENTUM DENSITY
+	        
+	        x[1] = CellProperties.s[1];
+			x[2] = RightCellProperties.s[1];
+			y[1] = CellProperties.rho_vp_f[1];
+			y[2] = RightCellProperties.rho_vp_f[1];
+#ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+			y[1] *= fCrossSection[2];
+			y[2] *= fCrossSection[3];
+#endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+			LinearFit( x, y, CellProperties.s[0], &Q1 );
 
+			x[1] = LeftCellProperties.s[1];
+			x[2] = CellProperties.s[1];
+			y[1] = LeftCellProperties.rho_vp_f[1];
+			y[2] = CellProperties.rho_vp_f[1];
+#ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+			y[1] *= fCrossSection[1];
+			y[2] *= fCrossSection[2];
+#endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+			LinearFit( x, y, CellProperties.s[0], &Q2 );
+
+	        Q3 = y[2];
+
+			// Note: The flow is in the opposite direction and so the conditional is switched
+			if( y[1] <= y[2] )
+			{
+    	        QT = max( Q1, Q2 );
+	    		if( Q3 < QT )
+	        		CellProperties.rho_vp_f[0] = Q3;
+	    		else
+	        		CellProperties.rho_vp_f[0] = QT;
+			}
+			else
+			{
+	    		QT = min( Q1, Q2 );
+		    	if( Q3 > QT )
+		        	CellProperties.rho_vp_f[0] = Q3;
+	    		else
+	        		CellProperties.rho_vp_f[0] = QT;
+			}
+
+			LeftCellProperties.rho_vp_f[2] = CellProperties.rho_vp_f[0];
+            
             // CALCULATE THE FIELD STRENGTH AND ALFVEN SPEED
 	        
 	        x[1] = CellProperties.s[1];
@@ -2673,8 +2845,8 @@ int j;
 	    CellProperties.drhobydt = CellProperties.rho_term[0];
         
 #ifdef TIME_VARIABLE_ABUNDANCES
-        LowerValue = CellProperties.AF[0] * CellProperties.rho[0] * CellProperties.v[0];
-        UpperValue = CellProperties.AF[2] * CellProperties.rho[2] * CellProperties.v[2];
+        LowerValue = CellProperties.rho_f[0] * CellProperties.v[0];
+        UpperValue = CellProperties.rho_f[2] * CellProperties.v[2];
 
         // Calculate the time derivative of the abundance factor
         #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
@@ -2682,9 +2854,9 @@ int j;
         #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
             CellProperties.dAFbydt = - ( UpperValue - LowerValue ) / CellProperties.cell_width;
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
-        
+                
         #ifdef PONDEROMOTIVE
-
+       
         // Now, calculate the cell-centered acceleration to be used by the next time step:
             // Calculate all of the preliminary variables first
         dvAbyds = (CellProperties.v_A[2] - CellProperties.v_A[0]) / CellProperties.cell_width;
@@ -2692,12 +2864,10 @@ int j;
         
         H_D = CellProperties.rho[1] / drhobyds;
         H_A = CellProperties.v_A[1] / dvAbyds;
-        //v_sum = CellProperties.v[1] + CellProperties.v_A[1];
-        //v_diff = CellProperties.v[1] - CellProperties.v_A[1];
-        //v_sum = CellProperties.v[1] + CellProperties.v_p[1] + CellProperties.v_A[1];
-        //v_diff = CellProperties.v[1] + CellProperties.v_p[1] - CellProperties.v_A[1];
-        v_sum = CellProperties.v_p[1] + CellProperties.v_A[1];
-        v_diff = CellProperties.v_p[1] - CellProperties.v_A[1];
+        v_sum = CellProperties.v[1] + CellProperties.v_A[1];
+        v_diff = CellProperties.v[1] - CellProperties.v_A[1];
+        //v_sum = CellProperties.v_p[1] + CellProperties.v_A[1];
+        //v_diff = CellProperties.v_p[1] - CellProperties.v_A[1];
         
         // Calculate the Elsasser I variables 
         for( j=0; j<=3; j++)
@@ -2722,8 +2892,8 @@ int j;
                 CellProperties.ponderomotive_a += 0.25 * (CellProperties.elsasser_I[j] * CellProperties.dIbyds[j]);
         }
             
-        LowerValue = CellProperties.AF[0] * CellProperties.rho[0] * CellProperties.v_p[0];
-        UpperValue = CellProperties.AF[2] * CellProperties.rho[2] * CellProperties.v_p[2];
+        LowerValue = CellProperties.rho_vp_f[0];
+        UpperValue = CellProperties.rho_vp_f[2];
 
         // Calculate the time derivative of the abundance factor
             // If we have a ponderomotive acceleration, redo the calculation above because the correct velocity
@@ -2735,16 +2905,16 @@ int j;
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
     
         // Calculate the time derivative of the low FIP momentum equation:
-        LowerValue = CellProperties.AF[0] * CellProperties.rho[0] * CellProperties.v_p[0] * CellProperties.v_p[0];
-        UpperValue = CellProperties.AF[2] * CellProperties.rho[2] * CellProperties.v_p[2] * CellProperties.v_p[2];
+        LowerValue = CellProperties.rho_vp_f[0] * CellProperties.v_p[0];
+        UpperValue = CellProperties.rho_vp_f[2] * CellProperties.v_p[2];
 
         #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
             CellProperties.dvpbydt = - (UpperValue - LowerValue ) / fCellVolume;
-            CellProperties.dvpbydt -= ( CellProperties.rho[1] * CellProperties.AF[1] * (CalculateGravity( CellProperties.s[1]/Params.L ) - CellProperties.ponderomotive_a) ) / fCrossSection[1];
+            CellProperties.dvpbydt -= ( CellProperties.rho_f[1] * (CalculateGravity( CellProperties.s[1]/Params.L ) - CellProperties.ponderomotive_a) ) / fCrossSection[1];
         #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
             CellProperties.dvpbydt = - ( UpperValue - LowerValue ) / CellProperties.cell_width;
-            CellProperties.dvpbydt += ( CellProperties.rho[1] * CellProperties.AF[1] * CellProperties.ponderomotive_a );
-            //CellProperties.dvpbydt -= ( CellProperties.rho[1] * CellProperties.AF[1] * (CalculateGravity( CellProperties.s[1]/Params.L ) - CellProperties.ponderomotive_a) );
+            CellProperties.dvpbydt += ( CellProperties.rho_f[1] * CellProperties.ponderomotive_a );
+            //CellProperties.dvpbydt -= ( CellProperties.rho_f[1] * (CalculateGravity( CellProperties.s[1]/Params.L ) - CellProperties.ponderomotive_a) );
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
         
         #endif // PONDEROMOTIVE
@@ -2828,7 +2998,7 @@ int j;
         //CellProperties.drho_vbydt += CellProperties.rho_v_term[5];
         
         // At the moment, we don't use an independent term so as to not affect the format of the .AMR files.
-        //CellProperties.drho_vbydt += ( low_FIP_abundance * CellProperties.rho[1] * CellProperties.ponderomotive_a * CellProperties.AF[1] ) / 1.2943705;
+        CellProperties.drho_vbydt += ( low_FIP_abundance * CellProperties.rho_f[1] * CellProperties.ponderomotive_a ) / 1.2943705;
          
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
@@ -3259,11 +3429,11 @@ pActiveCell->GetCellProperties( &CellProperties );
 #ifdef TIME_VARIABLE_ABUNDANCES
     // Update the abundance factor here!
     //pNewCellProperties->AF[1] = CellProperties.AF[1] +  ( delta_t * CellProperties.dAFbydt );
-    pNewCellProperties->rho_f = CellProperties.AF[1] * CellProperties.rho[1] + ( delta_t * CellProperties.dAFbydt );
+    pNewCellProperties->rho_f[1] = CellProperties.rho_f[1] + ( delta_t * CellProperties.dAFbydt );
     
     #ifdef PONDEROMOTIVE
     //pNewCellProperties->v_p[1] = CellProperties.v_p[1] + ( delta_t * CellProperties.dvpbydt );
-    pNewCellProperties->rho_vp_f = CellProperties.v_p[1] * CellProperties.rho[1] * CellProperties.AF[1] + ( delta_t * CellProperties.dvpbydt) ;
+    pNewCellProperties->rho_vp_f[1] = CellProperties.rho_vp_f[1] + ( delta_t * CellProperties.dvpbydt) ;
     #endif // PONDEROMOTIVE
     
 #endif // TIME_VARIABLE_ABUNDANCES
@@ -3308,11 +3478,11 @@ int j;
 #ifdef TIME_VARIABLE_ABUNDANCES
     // Update the abundance factor here!
     //pCellProperties->AF[1] = BottomCellProperties.AF[1] +  ( delta_t * pCellProperties->dAFbydt );
-    pCellProperties->rho_f = BottomCellProperties.AF[1] * BottomCellProperties.rho[1] + ( delta_t * pCellProperties->dAFbydt );
+    pCellProperties->rho_f[1] = BottomCellProperties.rho_f[1] + ( delta_t * pCellProperties->dAFbydt );
     
     #ifdef PONDEROMOTIVE
     //pCellProperties->v_p[1] = BottomCellProperties.v_p[1] + ( delta_t * pCellProperties->dvpbydt );
-    pCellProperties->rho_vp_f = BottomCellProperties.v_p[1] * BottomCellProperties.rho[1] * BottomCellProperties.AF[1] + ( delta_t * pCellProperties->dvpbydt);
+    pCellProperties->rho_vp_f[1] = BottomCellProperties.rho_vp_f[1] + ( delta_t * pCellProperties->dvpbydt);
     #endif // PONDEROMOTIVE
     
 #endif // TIME_VARIABLE_ABUNDANCES

@@ -312,7 +312,7 @@ do {
 #endif // OPTICALLY_THICK_RADIATION && NLTE_CHROMOSPHERE
 #if defined(TIME_VARIABLE_ABUNDANCES) && defined(PONDEROMOTIVE)
             dAF = 1.0 - ( min( CellProperties.AF[1], RightCellProperties.AF[1] ) / max( CellProperties.AF[1], RightCellProperties.AF[1] ) );
-            drho_LF = 1.0 - ( min( CellProperties.AF[1]*CellProperties.rho[1], RightCellProperties.AF[1]*RightCellProperties.rho[1] ) / max( CellProperties.AF[1]*CellProperties.rho[1], RightCellProperties.AF[1]*RightCellProperties.rho[1] ) );
+            drho_LF = 1.0 - ( min( CellProperties.rho_f[1], RightCellProperties.rho_f[1] ) / max( CellProperties.rho_f[1], RightCellProperties.rho_f[1] ) );
 #endif // TIME_VARIABLE_ABUNDANCES && PONDEROMOTIVE
             if( drho < MIN_FRAC_DIFF && dTE_KEe < MIN_FRAC_DIFF && dTE_KEh < MIN_FRAC_DIFF && drho_e < MIN_FRAC_DIFF && dAF < MIN_FRAC_DIFF && drho_LF < MIN_FRAC_DIFF)
             {
@@ -372,8 +372,10 @@ do {
 
 #ifdef TIME_VARIABLE_ABUNDANCES
                  NewCellProperties[0].AF[1] = ( CellProperties.AF[1] + RightCellProperties.AF[1] ) / 2.0;
+                 NewCellProperties[0].rho_f[1] = NewCellProperties[0].AF[1] * NewCellProperties[0].rho[1];
 #ifdef PONDEROMOTIVE
                  NewCellProperties[0].v_p[1] = ( CellProperties.v_p[1] + RightCellProperties.v_p[1] ) / 2.0;
+                 NewCellProperties[0].rho_vp_f[1] = NewCellProperties[0].rho_f[1] * NewCellProperties[0].v_p[1];
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -476,7 +478,7 @@ do {
 #endif // OPTICALLY_THICK_RADIATION && NLTE_CHROMOSPHERE
 #if defined(TIME_VARIABLE_ABUNDANCES) && defined(PONDEROMOTIVE)
         dAF = 1.0 - ( min( CellProperties.AF[1], RightCellProperties.AF[1] ) / max( CellProperties.AF[1], RightCellProperties.AF[1] ) );
-        drho_LF = 1.0 - ( min( CellProperties.AF[1]*CellProperties.rho[1], RightCellProperties.AF[1]*RightCellProperties.rho[1] ) / max( CellProperties.AF[1]*CellProperties.rho[1], RightCellProperties.AF[1]*RightCellProperties.rho[1] ) );
+        drho_LF = 1.0 - ( min( CellProperties.rho_f[1], RightCellProperties.rho_f[1] ) / max( CellProperties.rho_f[1], RightCellProperties.rho_f[1] ) );
 #endif // TIME_VARIABLE_ABUNDANCES && PONDEROMOTIVE
 
 		if( ( drho > MAX_FRAC_DIFF || dTE_KEe > MAX_FRAC_DIFF || dTE_KEh > MAX_FRAC_DIFF || drho_e > MAX_FRAC_DIFF || dAF > MAX_FRAC_DIFF || drho_LF > MAX_FRAC_DIFF || abs( CellProperties.iRefinementLevel - RightCellProperties.iRefinementLevel ) > 1 ) && ( CellProperties.iRefinementLevel < MAX_REFINEMENT_LEVEL || RightCellProperties.iRefinementLevel < MAX_REFINEMENT_LEVEL ) )
@@ -646,6 +648,8 @@ do {
                         FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]), &error );
                         FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]), &error );
 #endif // LINEAR_RESTRICTION
+                        NewCellProperties[0].rho_f[1] = NewCellProperties[0].rho[1] * NewCellProperties[0].AF[1];
+                        NewCellProperties[1].rho_f[1] = NewCellProperties[1].rho[1] * NewCellProperties[1].AF[1];
 
 #ifdef PONDEROMOTIVE
                           y[1] = FarLeftCellProperties.v_p[1];
@@ -660,6 +664,8 @@ do {
                         FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].v_p[1]), &error );
                         FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].v_p[1]), &error );
 #endif // LINEAR_RESTRICTION
+                        NewCellProperties[0].rho_vp_f[1] = NewCellProperties[0].rho_f[1] * NewCellProperties[0].v_p[1];
+                        NewCellProperties[1].rho_vp_f[1] = NewCellProperties[1].rho_f[1] * NewCellProperties[1].v_p[1];
 
 #endif // PONDEROMOTIVE
 
@@ -758,6 +764,8 @@ do {
 						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]), &error );
 						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]), &error );
 #endif // LINEAR_RESTRICTION
+                        NewCellProperties[0].rho_f[1] = NewCellProperties[0].rho[1] * NewCellProperties[0].AF[1];
+                        NewCellProperties[1].rho_f[1] = NewCellProperties[1].rho[1] * NewCellProperties[1].AF[1];
 
 #ifdef PONDEROMOTIVE
 						y[2] = LeftCellProperties.v_p[1];
@@ -771,6 +779,8 @@ do {
 						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].v_p[1]), &error );
 						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].v_p[1]), &error );
 #endif // LINEAR_RESTRICTION
+                        NewCellProperties[0].rho_vp_f[1] = NewCellProperties[0].rho_f[1] * NewCellProperties[0].v_p[1];
+                        NewCellProperties[1].rho_vp_f[1] = NewCellProperties[1].rho_f[1] * NewCellProperties[1].v_p[1];
 
 #endif // PONDEROMOTIVE
 
@@ -869,6 +879,8 @@ do {
 						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]), &error );
 						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]), &error );
 #endif // LINEAR_RESTRICTION
+                        NewCellProperties[0].rho_f[1] = NewCellProperties[0].rho[1] * NewCellProperties[0].AF[1];
+                        NewCellProperties[1].rho_f[1] = NewCellProperties[1].rho[1] * NewCellProperties[1].AF[1];
 
 #ifdef PONDEROMOTIVE
 						y[1] = FarLeftCellProperties.v_p[1];
@@ -882,6 +894,8 @@ do {
 						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].v_p[1]), &error );
 						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].v_p[1]), &error );
 #endif // LINEAR_RESTRICTION
+                        NewCellProperties[0].rho_vp_f[1] = NewCellProperties[0].rho_f[1] * NewCellProperties[0].v_p[1];
+                        NewCellProperties[1].rho_vp_f[1] = NewCellProperties[1].rho_f[1] * NewCellProperties[1].v_p[1];
 
 #endif // PONDEROMOTIVE
 
@@ -947,12 +961,17 @@ do {
                     y[2] = RightCellProperties.AF[1];
                     LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]) );
                     LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]) );
-
+                
+                    NewCellProperties[0].rho_f[1] = NewCellProperties[0].rho[1] * NewCellProperties[0].AF[1];
+                    NewCellProperties[1].rho_f[1] = NewCellProperties[1].rho[1] * NewCellProperties[1].AF[1];
 #ifdef PONDEROMOTIVE
                     y[1] = CellProperties.v_p[1];
                     y[2] = RightCellProperties.v_p[1];
                     LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].v_p[1]) );
                     LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].v_p[1]) );
+                    
+                    NewCellProperties[0].rho_vp_f[1] = NewCellProperties[0].rho_f[1] * NewCellProperties[0].v_p[1];
+                    NewCellProperties[1].rho_vp_f[1] = NewCellProperties[1].rho_f[1] * NewCellProperties[1].v_p[1];
 #endif // PONDEROMOTIVE
 
 #endif // TIME_VARIABLE_ABUNDANCES
@@ -1201,6 +1220,8 @@ do {
 						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]), &error );
 						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]), &error );
 #endif // LINEAR_RESTRICTION
+                        NewCellProperties[0].rho_f[1] = NewCellProperties[0].rho[1] * NewCellProperties[0].AF[1];
+                        NewCellProperties[1].rho_f[1] = NewCellProperties[1].rho[1] * NewCellProperties[1].AF[1];
 
 #ifdef PONDEROMOTIVE
 						y[1] = FarLeftCellProperties.v_p[1];
@@ -1215,6 +1236,8 @@ do {
 						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].v_p[1]), &error );
 						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].v_p[1]), &error );
 #endif // LINEAR_RESTRICTION
+                        NewCellProperties[0].rho_vp_f[1] = NewCellProperties[0].rho_f[1] * NewCellProperties[0].v_p[1];
+                        NewCellProperties[1].rho_vp_f[1] = NewCellProperties[1].rho_f[1] * NewCellProperties[1].v_p[1];
 
 #endif // PONDEROMOTIVE
 
@@ -1313,6 +1336,8 @@ do {
 						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]), &error );
 						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]), &error );
 #endif // LINEAR_RESTRICTION
+                        NewCellProperties[0].rho_f[1] = NewCellProperties[0].rho[1] * NewCellProperties[0].AF[1];
+                        NewCellProperties[1].rho_f[1] = NewCellProperties[1].rho[1] * NewCellProperties[1].AF[1];
 
 #ifdef PONDEROMOTIVE
 						y[2] = LeftCellProperties.v_p[1];
@@ -1326,7 +1351,9 @@ do {
 						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].v_p[1]), &error );
 						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].v_p[1]), &error );
 #endif // LINEAR_RESTRICTION
-
+                        NewCellProperties[0].rho_vp_f[1] = NewCellProperties[0].rho_f[1] * NewCellProperties[0].v_p[1];
+                        NewCellProperties[1].rho_vp_f[1] = NewCellProperties[1].rho_f[1] * NewCellProperties[1].v_p[1];
+                        
 #endif // PONDEROMOTIVE
 
 #endif // TIME_VARIABLE_ABUNDANCES
@@ -1425,6 +1452,8 @@ do {
 						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]), &error );
 						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]), &error );
 #endif // LINEAR_RESTRICTION
+                        NewCellProperties[0].rho_f[1] = NewCellProperties[0].rho[1] * NewCellProperties[0].AF[1];
+                        NewCellProperties[1].rho_f[1] = NewCellProperties[1].rho[1] * NewCellProperties[1].AF[1];
 
 #ifdef PONDEROMOTIVE
 						y[1] = FarLeftCellProperties.v_p[1];
@@ -1438,6 +1467,8 @@ do {
 						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].v_p[1]), &error );
 						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].v_p[1]), &error );
 #endif // LINEAR_RESTRICTION
+                        NewCellProperties[0].rho_vp_f[1] = NewCellProperties[0].rho_f[1] * NewCellProperties[0].v_p[1];
+                        NewCellProperties[1].rho_vp_f[1] = NewCellProperties[1].rho_f[1] * NewCellProperties[1].v_p[1];
 
 #endif // PONDEROMOTIVE
 
@@ -1504,11 +1535,16 @@ do {
                     LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]) );
                     LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]) );
                     
+                    NewCellProperties[0].rho_f[1] = NewCellProperties[0].rho[1] * NewCellProperties[0].AF[1];
+                    NewCellProperties[1].rho_f[1] = NewCellProperties[1].rho[1] * NewCellProperties[1].AF[1];
 #ifdef PONDEROMOTIVE
                     y[1] = LeftCellProperties.v_p[1];
                     y[2] = CellProperties.v_p[1];
                     LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].v_p[1]) );
                     LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].v_p[1]) );
+                    
+                    NewCellProperties[0].rho_vp_f[1] = NewCellProperties[0].rho_f[1] * NewCellProperties[0].v_p[1];
+                    NewCellProperties[1].rho_vp_f[1] = NewCellProperties[1].rho_f[1] * NewCellProperties[1].v_p[1];
 #endif // PONDEROMOTIVE
 
 #endif // TIME_VARIABLE_ABUNDANCES
@@ -1677,9 +1713,13 @@ void CAdaptiveMesh::EnforceBoundaryConditions( void )
 #ifdef TIME_VARIABLE_ABUNDANCES
 	GhostCellProperties[0].AF[1] = CellProperties[1].AF[1];
 	GhostCellProperties[1].AF[1] = CellProperties[0].AF[1];
+    GhostCellProperties[0].rho_f[1] = GhostCellProperties[0].rho[1] * GhostCellProperties[0].AF[1];
+    GhostCellProperties[1].rho_f[1] = GhostCellProperties[1].rho[1] * GhostCellProperties[1].AF[1];
 #ifdef PONDEROMOTIVE
 	GhostCellProperties[0].v_p[1] = CellProperties[1].v_p[1];
 	GhostCellProperties[1].v_p[1] = CellProperties[0].v_p[1];
+    GhostCellProperties[0].rho_vp_f[1] = GhostCellProperties[0].rho_f[1] * GhostCellProperties[0].v_p[1];
+    GhostCellProperties[1].rho_vp_f[1] = GhostCellProperties[1].rho_f[1] * GhostCellProperties[1].v_p[1];
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -1750,9 +1790,13 @@ void CAdaptiveMesh::EnforceBoundaryConditions( void )
     // Assume that the ghost cells have coronal abundance factors
     GhostCellProperties[0].AF[1] = CORONAL_ABUNDANCE_FACTOR;
     GhostCellProperties[1].AF[1] = CORONAL_ABUNDANCE_FACTOR;
+    GhostCellProperties[0].rho_f[1] = GhostCellProperties[0].rho[1] * GhostCellProperties[0].AF[1];
+    GhostCellProperties[1].rho_f[1] = GhostCellProperties[1].rho[1] * GhostCellProperties[1].AF[1];
 #ifdef PONDEROMOTIVE
     GhostCellProperties[0].v_p[1] = CellProperties[1].v_p[1];
     GhostCellProperties[1].v_p[1] = GhostCellProperties[0].v_p[1];
+    GhostCellProperties[0].rho_vp_f[1] = GhostCellProperties[0].rho_f[1] * GhostCellProperties[0].v_p[1];
+    GhostCellProperties[1].rho_vp_f[1] = GhostCellProperties[1].rho_f[1] * GhostCellProperties[1].v_p[1];
 #endif // PONDEROMOTIVE
 
 #endif // TIME_VARIABLE_ABUNDANCES
