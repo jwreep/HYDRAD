@@ -2989,6 +2989,11 @@ int j;
             CellProperties.dvpbydt -= CellProperties.rho_vp_f[1] * ((UpperValue - LowerValue) / CellProperties.cell_width);
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
         
+        LowerValue = CellProperties.AF[0];
+        UpperValue = CellProperties.AF[2];
+        
+        // 1.2943705 = AVERAGE_PARTICLE_MASS / PROTON_MASS
+        CellProperties.dvpbydt -= ( low_FIP_abundance / 1.2943705 ) * (CellProperties.P[1][HYDROGEN] + CellProperties.P[1][ELECTRON]) * ((UpperValue-LowerValue) / CellProperties.cell_width);
         
         #endif // PONDEROMOTIVE
     
