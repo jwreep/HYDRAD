@@ -89,7 +89,7 @@ class CEquations {
 
 #ifdef TIME_VARIABLE_ABUNDANCES
 #ifdef PONDEROMOTIVE
-    double low_FIP_abundance;
+    double low_FIP_abundance, low_FIP_mass;
 #endif // TIME_VARIABLE_ABUNDANCES
 #endif // PONDEROMOTIVE
 

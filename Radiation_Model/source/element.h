@@ -31,6 +31,10 @@ class CElement {
     #ifdef TIME_VARIABLE_ABUNDANCES
     // The first ionization potential (FIP) of the element
     double fFIP;
+    
+    #ifdef PONDEROMOTIVE
+    double fMass;
+    #endif // PONDEROMOTIVE
     #endif // TIME_VARIABLE_ABUNDANCES
 
     // The number of ions and their spectroscopic numbers
@@ -75,6 +79,10 @@ class CElement {
     #ifdef TIME_VARIABLE_ABUNDANCES
     // Function to open and read the first ionization potential file
     void OpenFIPFile( char *szFIPFilename );
+    
+    #ifdef PONDEROMOTIVE
+    void OpenMassFile( char *szMassFilename );
+    #endif // PONDEROMOTIVE
     #endif // TIME_VARIABLE_ABUNDANCES
 
     // Functions to calculate the factor phi( n, T ), which is multiplied by n^2 to calculate the radiated energy
@@ -127,6 +135,9 @@ class CElement {
     #ifdef TIME_VARIABLE_ABUNDANCES
     // Function to return the element FIP
     double GetFIP( void );
+    #ifdef PONDEROMOTIVE
+    double GetMass( void );
+    #endif // PONDEROMOTIVE
     #endif // TIME_VARIABLE_ABUNDANCES
 
 };

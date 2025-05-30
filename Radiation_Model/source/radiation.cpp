@@ -302,6 +302,21 @@ double CRadiation::GetLowFIPAbundance()
     
     return sum;
 }
+
+double CRadiation::GetLowFIPMass()
+{
+    int i;
+    double sum;
+    
+    sum = 0.0; 
+    for( i=0; i<iNumElements; i++ )
+    {
+        if( ppElements[i]->GetFIP() <= LOW_FIP_THRESHOLD )
+            sum += (ppElements[i]->GetMass() * ppElements[i]->GetAbundance);
+    }
+
+    return sum;
+}
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 

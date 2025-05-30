@@ -191,6 +191,7 @@ int iTemp;
 #ifdef TIME_VARIABLE_ABUNDANCES
 #ifdef PONDEROMOTIVE
     low_FIP_abundance = pRadiation->GetLowFIPAbundance() + pRadiation2->GetLowFIPAbundance();
+    low_FIP_mass = (pRadiation->GetLowFIPMass() + pRadiation2->GetLowFIPMass()) / low_FIP_abundance;
 #endif // TIME_VARIABLE_ABUNDANCES
 #endif // PONDEROMOTIVE
 
@@ -2992,8 +2993,7 @@ int j;
         LowerValue = CellProperties.AF[0];
         UpperValue = CellProperties.AF[2];
         
-        // 1.2943705 = AVERAGE_PARTICLE_MASS / PROTON_MASS
-        CellProperties.dvpbydt -= ( low_FIP_abundance / 1.2943705 ) * (CellProperties.P[1][HYDROGEN] + CellProperties.P[1][ELECTRON]) * ((UpperValue-LowerValue) / CellProperties.cell_width);
+        CellProperties.dvpbydt -= ( AVERAGE_PARTICLE_MASS / low_FIP_mass ) * CellProperties.P[1][HYDROGEN] * ((UpperValue-LowerValue) / CellProperties.cell_width);
         
         #endif // PONDEROMOTIVE
     
@@ -3076,7 +3076,7 @@ int j;
         //CellProperties.drho_vbydt += CellProperties.rho_v_term[5];
         
         // At the moment, we don't use an independent term so as to not affect the format of the .AMR files.
-        CellProperties.drho_vbydt += ( low_FIP_abundance * CellProperties.rho_f[1] * CellProperties.ponderomotive_a ) / 1.2943705;
+        //CellProperties.drho_vbydt += ( low_FIP_abundance * CellProperties.rho_f[1] * CellProperties.ponderomotive_a ) / 1.2943705;
          
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES

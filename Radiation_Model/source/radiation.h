@@ -76,6 +76,9 @@ class CRadiation {
     #ifdef PONDEROMOTIVE
     // Function to return the summed photospheric abundance of all low FIP elements
     double GetLowFIPAbundance();
+    // Function to return the sum of the low FIP mass times abundance 
+    // (used to calculate a weighted average of the low FIP mass)
+    double GetLowFIPMass();
     #endif // PONDEROMOTIVE
     #endif // TIME_VARIABLE_ABUNDANCES
 

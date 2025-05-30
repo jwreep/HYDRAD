@@ -42,8 +42,10 @@ OpenRatesFile( szRatesFilename );
 OpenIonFracFile( szIonFracFilename );
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-// TODO: Generalize to allow other files to be used
 OpenFIPFile("Radiation_Model/atomic_data/FIP/chianti.fip");
+#ifdef PONDEROMOTIVE
+OpenMassFile("Radiation_Model/atomic_data/masses/masses.amu");
+#endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
 // Calculate phi for each ion as a function of temperature and density
@@ -308,7 +310,7 @@ int buffer;
 // Open the FIP file
 pFile = fopen( szFIPFilename, "r" );
 
-// Search for the abundance of the required element
+// Search for the FIP of the required element
 
 for(;;)
 {
@@ -335,6 +337,45 @@ if( buffer == -1 )
 
 fclose( pFile );
 }
+
+#ifdef PONDEROMOTIVE
+void CElement::OpenMassFile( char *szFIPFilename )
+{
+FILE *pFile;
+double fTemp;
+int buffer;
+
+// Open the mass file
+pFile = fopen( szFIPFilename, "r" );
+
+// Search for the mass of the required element
+
+for(;;)
+{
+    // Get the atomic number of the element
+    fscanf( pFile, "%i", &buffer );
+
+    // If the value read is -1 then break
+    if( buffer == -1 ) break;
+
+    // Get the mass of the element in amu
+    ReadDouble( pFile, &fTemp );
+
+    // If the atomic number read is the atomic number of the element then store the mass
+    if( buffer == Z )
+    {
+        fFIP = fTemp;
+        break;
+    }
+}
+
+// If the atomic number of the element was not found in the mass file then set the mass to zero
+if( buffer == -1 )
+    fFIP = 0.0;
+
+fclose( pFile );
+}
+#endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
 void CElement::CalculatePhi( void )
@@ -1249,4 +1290,11 @@ double CElement::GetFIP( void )
 {
 return fFIP;
 }
+
+#ifdef PONDEROMOTIVE
+double CElement::GetMass( void )
+{
+return fMass * ATOMIC_MASS_UNIT;  // Return the mass in grams
+}
+#endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES

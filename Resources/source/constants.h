@@ -33,6 +33,7 @@
 #define PROTON_MASS                             1.6726231e-24                       // (g)
 #define NEUTRON_MASS                            1.6749286e-24                       // (g)
 #define AVERAGE_PARTICLE_MASS  			2.171e-24                           // (g)
+#define ATOMIC_MASS_UNIT			1.66053906892e-24		    // (g)
 #define SQRT_AVERAGE_PARTICLE_MASS		1.473e-12                           // (g^0.5)
 
 #define ELECTRON_CHARGE				4.80e-10                            // (esu)
