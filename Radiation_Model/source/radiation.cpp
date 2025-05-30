@@ -309,10 +309,10 @@ double CRadiation::GetLowFIPMass()
     double sum;
     
     sum = 0.0; 
-    for( i=0; i<iNumElements; i++ )
+    for( i=0; i<NumElements; i++ )
     {
         if( ppElements[i]->GetFIP() <= LOW_FIP_THRESHOLD )
-            sum += (ppElements[i]->GetMass() * ppElements[i]->GetAbundance);
+            sum += (ppElements[i]->GetMass() * ppElements[i]->GetAbundance());
     }
 
     return sum;
