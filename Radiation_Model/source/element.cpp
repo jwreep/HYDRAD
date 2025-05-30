@@ -339,18 +339,20 @@ fclose( pFile );
 }
 
 #ifdef PONDEROMOTIVE
-void CElement::OpenMassFile( char *szFIPFilename )
+void CElement::OpenMassFile( char *szMassFilename )
 {
 FILE *pFile;
 double fTemp;
-int buffer;
+int buffer, NumIons;
 
 // Open the mass file
-pFile = fopen( szFIPFilename, "r" );
+pFile = fopen( szMassFilename, "r" );
+
+fscanf( pFile, "%i", &NumIons );
 
 // Search for the mass of the required element
 
-for(;;)
+for(int i = 0; i<NumIons; i++)
 {
     // Get the atomic number of the element
     fscanf( pFile, "%i", &buffer );
@@ -364,14 +366,14 @@ for(;;)
     // If the atomic number read is the atomic number of the element then store the mass
     if( buffer == Z )
     {
-        fFIP = fTemp;
+        fMass = fTemp;
         break;
     }
 }
 
 // If the atomic number of the element was not found in the mass file then set the mass to zero
 if( buffer == -1 )
-    fFIP = 0.0;
+    fMass = 0.0;
 
 fclose( pFile );
 }

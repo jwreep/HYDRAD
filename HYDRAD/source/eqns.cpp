@@ -2984,8 +2984,8 @@ int j;
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
     
         // Calculate the time derivative of the low FIP momentum equation:
-        LowerValue = CellProperties.rho_vp_f[0] * (CellProperties.v_p[0] + CellProperties.v[0]);
-        UpperValue = CellProperties.rho_vp_f[2] * (CellProperties.v_p[2] + CellProperties.v[2]);
+        LowerValue = CellProperties.rho_vp_f[0] * (CellProperties.v_p[0] + 2.0*CellProperties.v[0]);
+        UpperValue = CellProperties.rho_vp_f[2] * (CellProperties.v_p[2] + 2.0*CellProperties.v[2]);
 
         #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
             CellProperties.dvpbydt = - (UpperValue - LowerValue ) / fCellVolume;
@@ -2993,21 +2993,31 @@ int j;
         #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
             CellProperties.dvpbydt = - ( UpperValue - LowerValue ) / CellProperties.cell_width;
             CellProperties.dvpbydt += ( CellProperties.rho_f[1] * CellProperties.ponderomotive_a );
-            //CellProperties.dvpbydt += (CellProperties.rho[1]*(CellProperties.v_p[1] - CellProperties.v[1])*(CellProperties.nu_ie*CellProperties.n[ION]/CellProperties.n[ELECTRON]/1832.) );
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
         
-        LowerValue = CellProperties.v[0];
+        /*LowerValue = CellProperties.v[0];
         UpperValue = CellProperties.v[2];
         #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
             CellProperties.dvpbydt -= CellProperties.rho_vp_f[1] * ((UpperValue - LowerValue) / fCellVolume);
         #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
             CellProperties.dvpbydt -= CellProperties.rho_vp_f[1] * ((UpperValue - LowerValue) / CellProperties.cell_width);
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+        */
+        LowerValue = CellProperties.rho_vp_f[0];
+        UpperValue = CellProperties.rho_vp_f[2];
+        CellProperties.dvpbydt += CellProperties.v[1] * ((UpperValue - LowerValue) / CellProperties.cell_width);
+        
         
         LowerValue = CellProperties.AF[0];
         UpperValue = CellProperties.AF[2];
         
         CellProperties.dvpbydt -= ( AVERAGE_PARTICLE_MASS / low_FIP_mass ) * CellProperties.P[1][HYDROGEN] * ((UpperValue-LowerValue) / CellProperties.cell_width);
+        
+        LowerValue = CellProperties.P[0][HYDROGEN] + CellProperties.P[0][ELECTRON];
+        UpperValue = CellProperties.P[2][HYDROGEN] + CellProperties.P[2][ELECTRON];
+          
+        //printf("s %.5e\tf %.5e\tdP %.5e\n", CellProperties.s[1], CellProperties.AF[1], ((UpperValue - LowerValue) / CellProperties.cell_width));
+        //CellProperties.dvpbydt += CellProperties.AF[1] * ((UpperValue - LowerValue) / CellProperties.cell_width);
         
         #endif // PONDEROMOTIVE
     
