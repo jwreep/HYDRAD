@@ -1710,6 +1710,17 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
     // Quantities used to calculate the ponderomotive acceleration
 double H_D, H_A, v_sum, v_diff, drhobyds, dvAbyds;
 double max_AF = 1.0;
+double fSum_neutral, fSum_HII, fSum_HeII, fSum_HeIII;
+double fAbundance, fMass, fFIP, fHeliumAbundance;
+double nu_m_HI, nu_m_HII, nu_m_HeI, nu_m_HeII, nu_m_HeIII, fZ_m;
+double fIonFrac[31];
+double pHeliumIonFrac[3];
+int *pAtomicNumbers;
+int i, iNumEI;
+#ifdef NON_EQUILIBRIUM_RADIATION
+int iNumNEI;
+double *pfIonFrac;
+#endif // NON_EQUILIBRIUM_RADIATION
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -2936,6 +2947,11 @@ int j;
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
                 
         #ifdef PONDEROMOTIVE
+        if( fabs(CellProperties.v_p[1]) < 1e-5 )
+        {
+            CellProperties.v_p[1] = 0.0;
+            CellProperties.rho_vp_f[1] = 0.0;
+        }
        
         if( CellProperties.AF[1] > max_AF ) max_AF = CellProperties.AF[1];
        
@@ -2972,6 +2988,9 @@ int j;
                 CellProperties.ponderomotive_a += 0.25 * (CellProperties.elsasser_I[j] * CellProperties.dIbyds[j]);
         }
             
+        //if( (current_time < 1000.0) || (current_time > 1100.0) )
+        //    CellProperties.ponderomotive_a = 0.0;
+            
         LowerValue = CellProperties.rho_f[0] * (CellProperties.v_p[0] + CellProperties.v[0]);
         UpperValue = CellProperties.rho_f[2] * (CellProperties.v_p[2] + CellProperties.v[2]);
 
@@ -2995,30 +3014,137 @@ int j;
             CellProperties.dvpbydt += ( CellProperties.rho_f[1] * CellProperties.ponderomotive_a );
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
         
-        /*LowerValue = CellProperties.v[0];
-        UpperValue = CellProperties.v[2];
-        #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
-            CellProperties.dvpbydt -= CellProperties.rho_vp_f[1] * ((UpperValue - LowerValue) / fCellVolume);
-        #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
-            CellProperties.dvpbydt -= CellProperties.rho_vp_f[1] * ((UpperValue - LowerValue) / CellProperties.cell_width);
-        #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
-        */
         LowerValue = CellProperties.rho_vp_f[0];
         UpperValue = CellProperties.rho_vp_f[2];
-        CellProperties.dvpbydt += CellProperties.v[1] * ((UpperValue - LowerValue) / CellProperties.cell_width);
-        
+        #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+            CellProperties.dvpbydt += CellProperties.v[1] * ((UpperValue - LowerValue) / fCellVolume);
+        #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
+            CellProperties.dvpbydt += CellProperties.v[1] * ((UpperValue - LowerValue) / CellProperties.cell_width);
+        #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
         
         LowerValue = CellProperties.AF[0];
         UpperValue = CellProperties.AF[2];
+        //CellProperties.dvpbydt -= ( AVERAGE_PARTICLE_MASS / low_FIP_mass ) * CellProperties.P[1][HYDROGEN] * ((UpperValue-LowerValue) / CellProperties.cell_width);
         
-        CellProperties.dvpbydt -= ( AVERAGE_PARTICLE_MASS / low_FIP_mass ) * CellProperties.P[1][HYDROGEN] * ((UpperValue-LowerValue) / CellProperties.cell_width);
-        
+        // Pressure term
         LowerValue = CellProperties.P[0][HYDROGEN] + CellProperties.P[0][ELECTRON];
         UpperValue = CellProperties.P[2][HYDROGEN] + CellProperties.P[2][ELECTRON];
-          
-        //printf("s %.5e\tf %.5e\tdP %.5e\n", CellProperties.s[1], CellProperties.AF[1], ((UpperValue - LowerValue) / CellProperties.cell_width));
         //CellProperties.dvpbydt += CellProperties.AF[1] * ((UpperValue - LowerValue) / CellProperties.cell_width);
+                
+        // Calculate the collision frequencies between low FIP metals (m) and hydrogen (H I and H II),
+        // as well as between metals and helium (He I, He II, He III)
+        fSum_neutral = 0.0;
+        fSum_HII = 0.0;
+        fSum_HeII = 0.0;
+        fSum_HeIII = 0.0;
+        nu_m_HI = 0.0;
+        nu_m_HeI = 0.0;
+        nu_m_HII = 0.0;
+        nu_m_HeII = 0.0;
+        nu_m_HeIII = 0.0;
         
+        // First, determine the abundance and ion fractions of helium
+        // We don't know a priori whether it is being solved in equilibrium or non-equilibrium
+        fHeliumAbundance = 0.0;
+        pAtomicNumbers = pRadiation2->pGetAtomicNumbers( &iNumEI );
+        for( i=0; i<iNumEI; i++ )
+        {
+            if( pAtomicNumbers[i] == 2 )
+            {
+                fHeliumAbundance = pRadiation2->GetAbundance( pAtomicNumbers[i] );
+                pRadiation2->GetEquilIonFrac( pAtomicNumbers[i], pHeliumIonFrac, log10(CellProperties.T[ELECTRON]) );
+                break;
+            }
+        }
+        
+        // If it's not in the equilibrium ion list, then check the non-equilibrium list!
+        #ifdef NON_EQUILIBRIUM_RADIATION
+        pAtomicNumbers = CellProperties.pIonFrac->pGetElementInfo( &iNumNEI );
+        if( fHeliumAbundance == 0.0 )
+        {
+            for( i = 0; i < iNumNEI; i++)
+            {
+                if( pAtomicNumbers[i] == 2 )
+                {
+                    fHeliumAbundance = pRadiation->GetAbundance( pAtomicNumbers[i] );
+                    pHeliumIonFrac = CellProperties.pIonFrac->pGetIonFrac( pAtomicNumbers[i] );
+                    break;
+                }
+            }
+        }  // If the abundance is in neither radiation object, then it is zero, and is not included in the collision frequencies!
+        
+        // Proceed to calculate the collision frequencies in non-equilibrium ionization populations
+        for( i = 0; i < iNumNEI; i++)
+        {
+            fFIP = pRadiation->GetFIP( pAtomicNumbers[i] );
+            
+            if( pAtomicNumbers[i] > 1 && fFIP < LOW_FIP_THRESHOLD && fFIP != 0.0 )
+            {
+                fMass = pRadiation->GetMass( pAtomicNumbers[i] );
+                fAbundance = pRadiation->GetAbundance( pAtomicNumbers[i] );
+                pfIonFrac = CellProperties.pIonFrac->pGetIonFrac( pAtomicNumbers[i] );
+                for( j=1; j<pAtomicNumbers[i]+1; j++ )
+                {
+                    fZ_m = ((double)j) * pfIonFrac[j]
+                    fSum_neutral += fZ_m;  
+                    fSum_HII += fZ_m * fZ_m * (23.0 - log( (fZ_m/pow(CellProperties.T[HYDROGEN], 1.5) ) * sqrt(CellProperties.n[HYDROGEN] * (fZ_m*fZ_m*CellProperties.AF[1]*fAbundance*pfIonFrac[j] + 1.0 - CellProperties.HI ) ) ) );
+                    fSum_HeII += fZ_m * fZ_m * (23.0 - log( (fZ_m/pow(CellProperties.T[HYDROGEN], 1.5) ) * sqrt(CellProperties.n[HYDROGEN] * (fZ_m*fZ_m*CellProperties.AF[1]*fAbundance*pfIonFrac[j] + fHeliumAbundance*pHeliumIonFrac[1] ) ) ) );;
+                    fSum_HeIII += fZ_m * fZ_m * (23.0 - log( (2.0*fZ_m/pow(CellProperties.T[HYDROGEN], 1.5) ) * sqrt(CellProperties.n[HYDROGEN] * (fZ_m*fZ_m*CellProperties.AF[1]*fAbundance*pfIonFrac[j] + 4.0*fHeliumAbundance*pHeliumIonFrac[2] ) ) ) );;
+                }
+                
+                nu_m_HI += ( (PROTON_MASS / fMass) * fSum_neutral / sqrt(1.0 + 1.0/(CellProperties.AF[1] * fAbundance) ) );
+                nu_m_HeI += ( (4.0026*PROTON_MASS / fMass) * fSum_neutral / sqrt(1.0 + 4.0/(CellProperties.AF[1] * fAbundance) ) );
+                nu_m_HII += (1.0/sqrt(fMass)) * fSum_HII;
+                nu_m_HeII += (1.0/sqrt(fMass)) * fSum_HeII;
+                nu_m_HeIII += (1.0/sqrt(fMass)) * fSum_HeIII;
+            }
+        }
+        #endif // NON_EQUILIBRIUM_RADIATION
+        pAtomicNumbers = pRadiation2->pGetAtomicNumbers( &iNumEI );
+        for( i=0; i<iNumEI; i++ )
+        {
+            fFIP = pRadiation2->GetFIP( pAtomicNumbers[i] );
+            if( pAtomicNumbers[i] > 1 && fFIP < LOW_FIP_THRESHOLD && fFIP != 0.0 )
+            {
+                fMass = pRadiation2->GetMass( pAtomicNumbers[i] );
+                fAbundance = pRadiation2->GetAbundance( pAtomicNumbers[i] );
+                pRadiation2->GetEquilIonFrac( pAtomicNumbers[i], fIonFrac, log10(CellProperties.T[ELECTRON]) );
+                for( j=1; j<pAtomicNumbers[i]+1; j++ )
+                {
+                    fZ_m = ((double)j) * fIonFrac[j];
+                    fSum_neutral += fZ_m;
+                    fSum_HII += fZ_m * fZ_m * (23.0 - log( (fZ_m/pow(CellProperties.T[HYDROGEN], 1.5) ) * sqrt(CellProperties.n[HYDROGEN] * (fZ_m*fZ_m*CellProperties.AF[1]*fAbundance*fIonFrac[j] + 1.0 - CellProperties.HI ) ) ) );
+                    fSum_HeII += fZ_m * fZ_m * (23.0 - log( (fZ_m/pow(CellProperties.T[HYDROGEN], 1.5) ) * sqrt(CellProperties.n[HYDROGEN] * (fZ_m*fZ_m*CellProperties.AF[1]*fAbundance*fIonFrac[j] + fHeliumAbundance*pHeliumIonFrac[1] ) ) ) );;
+                    fSum_HeIII += fZ_m * fZ_m * (23.0 - log( (2.0*fZ_m/pow(CellProperties.T[HYDROGEN], 1.5) ) * sqrt(CellProperties.n[HYDROGEN] * (fZ_m*fZ_m*CellProperties.AF[1]*fAbundance*fIonFrac[j] + 4.0*fHeliumAbundance*pHeliumIonFrac[2] ) ) ) );;
+                }
+                
+                nu_m_HI += ( (PROTON_MASS / fMass) * fSum_neutral / sqrt(1.0 + 1.0/(CellProperties.AF[1] * fAbundance) ) );
+                nu_m_HeI += ( (4.0026*PROTON_MASS / fMass) * fSum_neutral / sqrt(1.0 + 4.0/(CellProperties.AF[1] * fAbundance) ) );
+                nu_m_HII += (1.0/sqrt(fMass)) * fSum_HII;
+                nu_m_HeII += (1.0/sqrt(fMass)) * fSum_HeII;
+                nu_m_HeIII += (1.0/sqrt(fMass)) * fSum_HeIII;
+            }
+        }
+        
+        // Ion-neutral collisions:
+        nu_m_HI *= (2.105e-9) * CellProperties.HI * CellProperties.n[HYDROGEN];
+        nu_m_HeI *= (5.84e-10) * CellProperties.n[HYDROGEN] * fHeliumAbundance * pHeliumIonFrac[0];
+        
+        // Ion-ion collisions
+        // 1.4548e-13 = 4 pi q_e^4 / (2 k_B)^(1.5)
+        nu_m_HII *= (1.4548e-13) * (1.0-CellProperties.HI) * CellProperties.n[HYDROGEN] / pow(CellProperties.T[HYDROGEN], 1.5);
+        nu_m_HeII *= (1.4548e-13) * (fHeliumAbundance * pHeliumIonFrac[1]) * CellProperties.n[HYDROGEN] / pow(CellProperties.T[HYDROGEN], 1.5);
+        nu_m_HeIII *= (4.0*1.4548e-13) * (fHeliumAbundance * pHeliumIonFrac[2]) * CellProperties.n[HYDROGEN] / pow(CellProperties.T[HYDROGEN], 1.5);
+        
+        //printf("s %.5e\tnu %.3e\trvf %.3e\tf %.3e\tvp %.3e\n", CellProperties.s[1], (nu_m_HI + nu_m_HII + nu_m_HeI + nu_m_HeII + nu_m_HeIII), CellProperties.rho_vp_f[1], CellProperties.AF[1], CellProperties.v_p[1]);
+        //if(CellProperties.s[1] < 1.2*INJECTION_HEIGHT)
+        //    printf("s %.5e\tdrvp %.3e\tvp %.3e\trfv %.3e\trf %.3e\tct %.3e\tnu %.3e\n", CellProperties.s[1], CellProperties.dvpbydt, CellProperties.v_p[1], CellProperties.rho_vp_f[1], CellProperties.rho_f[1],
+        //    CellProperties.rho_vp_f[1] * (nu_m_HI + nu_m_HII + nu_m_HeI + nu_m_HeII + nu_m_HeIII), (nu_m_HI + nu_m_HII + nu_m_HeI + nu_m_HeII + nu_m_HeIII));
+        
+        // Finally, add the collisions term to the low FIP momentum equation!
+        //CellProperties.dvpbydt -= CellProperties.rho_vp_f[1] * (nu_m_HI + nu_m_HII + nu_m_HeI + nu_m_HeII + nu_m_HeIII);
+        
+        if( fabs(CellProperties.dvpbydt) < 1e-20 ) CellProperties.dvpbydt = 0.0;
         #endif // PONDEROMOTIVE
     
 #endif // TIME_VARIABLE_ABUNDANCES
@@ -3236,7 +3362,7 @@ int j;
     	if( CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE )
     	{
         	CellProperties.TE_KE_term[4][ELECTRON] += pHeat->CalculateVALHeating( log10(CellProperties.rho_c ) );
-        	CellProperties.TE_KE_term[5][ELECTRON] -= pHI->GetVolumetricLossRate( log10(CellProperties.T[ELECTRON]), log10((4e-14)*CellProperties.HI_c), CellProperties.n[ELECTRON] * CellProperties.rho[1] );
+        CellProperties.TE_KE_term[5][ELECTRON] -= pHI->GetVolumetricLossRate( log10(CellProperties.T[ELECTRON]), log10((4e-14)*CellProperties.HI_c), CellProperties.n[ELECTRON] * CellProperties.rho[1] );
         	CellProperties.TE_KE_term[5][ELECTRON] -= pMgII->GetVolumetricLossRate( log10(CellProperties.T[ELECTRON]), log10(CellProperties.rho_c), CellProperties.n[ELECTRON] * CellProperties.rho[1] );
         	CellProperties.TE_KE_term[5][ELECTRON] -= pCaII->GetVolumetricLossRate( log10(CellProperties.T[ELECTRON]), log10(CellProperties.rho_c), CellProperties.n[ELECTRON] * CellProperties.rho[1] );
 // **** RADIATION TIME STEP ****

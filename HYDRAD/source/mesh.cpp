@@ -253,7 +253,7 @@ void CAdaptiveMesh::Adapt( void )
 {
 PCELL pNextActiveCell, pFarLeftCell, pLeftCell, pRightCell, pFarRightCell, pNewCell[2];
 CELLPROPERTIES FarLeftCellProperties, LeftCellProperties, CellProperties, RightCellProperties, FarRightCellProperties, NewCellProperties[2];
-double drho = 0.0, dTE_KEe = 0.0, dTE_KEh = 0.0, drho_e = 0.0, drho_LF = 0.0, dAF = 0.0, dKE_LF = 0.0, x[6], y[6];
+double drho = 0.0, dTE_KEe = 0.0, dTE_KEh = 0.0, drho_e = 0.0, drho_LF = 0.0, x[6], y[6];
 int iProlonged, iRestricted, j;
 
 #ifdef NON_EQUILIBRIUM_RADIATION
@@ -312,8 +312,6 @@ do {
 #endif // OPTICALLY_THICK_RADIATION && NLTE_CHROMOSPHERE
 #if defined(TIME_VARIABLE_ABUNDANCES) && defined(PONDEROMOTIVE)
             drho_LF = 1.0 - ( min( CellProperties.rho_f[1], RightCellProperties.rho_f[1] ) / max( CellProperties.rho_f[1], RightCellProperties.rho_f[1] ) );
-            dAF = 1.0 - ( min( CellProperties.AF[1], RightCellProperties.AF[1] ) / max( CellProperties.AF[1], RightCellProperties.AF[1] ) );
-            dKE_LF = 1.0 - ( min( CellProperties.rho_vp_f[1]*CellProperties.v_p[1], RightCellProperties.rho_vp_f[1]*RightCellProperties.v_p[1] ) / max( CellProperties.rho_vp_f[1]*CellProperties.v_p[1], RightCellProperties.rho_vp_f[1]*RightCellProperties.v_p[1] ));
 #endif // TIME_VARIABLE_ABUNDANCES && PONDEROMOTIVE
             if( drho < MIN_FRAC_DIFF && dTE_KEe < MIN_FRAC_DIFF && dTE_KEh < MIN_FRAC_DIFF && drho_e < MIN_FRAC_DIFF && drho_LF < MIN_FRAC_DIFF )
             {
@@ -477,8 +475,6 @@ do {
 #endif // OPTICALLY_THICK_RADIATION && NLTE_CHROMOSPHERE
 #if defined(TIME_VARIABLE_ABUNDANCES) && defined(PONDEROMOTIVE)
         drho_LF = 1.0 - ( min( CellProperties.rho_f[1], RightCellProperties.rho_f[1] ) / max( CellProperties.rho_f[1], RightCellProperties.rho_f[1] ) );
-        dAF = 1.0 - ( min( CellProperties.AF[1], RightCellProperties.AF[1] ) / max( CellProperties.AF[1], RightCellProperties.AF[1] ) );
-        dKE_LF = 1.0 - ( min( CellProperties.rho_vp_f[1]*CellProperties.v_p[1], RightCellProperties.rho_vp_f[1]*RightCellProperties.v_p[1] ) / max( CellProperties.rho_vp_f[1]*CellProperties.v_p[1], RightCellProperties.rho_vp_f[1]*RightCellProperties.v_p[1] ));
 #endif // TIME_VARIABLE_ABUNDANCES && PONDEROMOTIVE
 
 		if( ( drho > MAX_FRAC_DIFF || dTE_KEe > MAX_FRAC_DIFF || dTE_KEh > MAX_FRAC_DIFF || drho_e > MAX_FRAC_DIFF || drho_LF > MAX_FRAC_DIFF || abs( CellProperties.iRefinementLevel - RightCellProperties.iRefinementLevel ) > 1 ) && ( CellProperties.iRefinementLevel < MAX_REFINEMENT_LEVEL || RightCellProperties.iRefinementLevel < MAX_REFINEMENT_LEVEL ) )
@@ -664,7 +660,6 @@ do {
 #endif // LINEAR_RESTRICTION
 
 #endif // PONDEROMOTIVE
-
 #endif // TIME_VARIABLE_ABUNDANCES
 		    		}
                     else if( !pFarLeftCell )
@@ -886,7 +881,6 @@ do {
 #endif // LINEAR_RESTRICTION
 
 #endif // PONDEROMOTIVE
-
 #endif // TIME_VARIABLE_ABUNDANCES
                     }
 				}
@@ -987,6 +981,23 @@ do {
 				    NewCellProperties[0].TE_KE[1][j] *= fWeight;
 		    		NewCellProperties[1].TE_KE[1][j] *= fWeight;
 				}
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+                 fWeight = ( 2.0 * CellProperties.rho_f[1] ) / ( NewCellProperties[0].rho_f[1] + NewCellProperties[1].rho_f[1] );
+				NewCellProperties[0].rho_f[1] *= fWeight;
+				NewCellProperties[1].rho_f[1] *= fWeight;
+#ifdef PONDEROMOTIVE
+				if( NewCellProperties[0].rho_vp_f[1] || NewCellProperties[1].rho_vp_f[1] )
+				{
+                    temp1 = ( 2.0 * CellProperties.rho_vp_f[1] ) - ( NewCellProperties[0].rho_vp_f[1] + NewCellProperties[1].rho_vp_f[1] );
+                    temp2 = fabs( NewCellProperties[0].rho_vp_f[1] );
+                    temp3 = fabs( NewCellProperties[1].rho_vp_f[1] );
+                    temp4 = temp1 / ( temp2 + temp3 );
+                    NewCellProperties[0].rho_vp_f[1] += ( temp2 * temp4 );
+                    NewCellProperties[1].rho_vp_f[1] += ( temp3 * temp4 );
+				}
+#endif // PONDEROMOTIVE
+#endif // TIME_VARIABLE_ABUNDANCES
 
 #ifdef OPTICALLY_THICK_RADIATION
 #ifdef NLTE_CHROMOSPHERE
@@ -1331,7 +1342,6 @@ do {
 #endif // LINEAR_RESTRICTION
                         
 #endif // PONDEROMOTIVE
-
 #endif // TIME_VARIABLE_ABUNDANCES
                     }
                     else if( !pFarRightCell )
@@ -1544,6 +1554,23 @@ do {
 		    		NewCellProperties[0].TE_KE[1][j] *= fWeight;
 		    		NewCellProperties[1].TE_KE[1][j] *= fWeight;
 				}
+                
+#ifdef TIME_VARIABLE_ABUNDANCES
+				fWeight = ( 2.0 * CellProperties.rho_f[1] ) / ( NewCellProperties[0].rho_f[1] + NewCellProperties[1].rho_f[1] );
+				NewCellProperties[0].rho_f[1] *= fWeight;
+				NewCellProperties[1].rho_f[1] *= fWeight;
+#ifdef PONDEROMOTIVE
+				if( NewCellProperties[0].rho_vp_f[1] || NewCellProperties[1].rho_vp_f[1] )
+				{
+                    temp1 = ( 2.0 * CellProperties.rho_vp_f[1] ) - ( NewCellProperties[0].rho_vp_f[1] + NewCellProperties[1].rho_vp_f[1] );
+                    temp2 = fabs( NewCellProperties[0].rho_vp_f[1] );
+                    temp3 = fabs( NewCellProperties[1].rho_vp_f[1] );
+                    temp4 = temp1 / ( temp2 + temp3 );
+                    NewCellProperties[0].rho_vp_f[1] += ( temp2 * temp4 );
+                    NewCellProperties[1].rho_vp_f[1] += ( temp3 * temp4 );
+				}
+#endif // PONDEROMOTIVE
+#endif // TIME_VARIABLE_ABUNDANCES
 
 #ifdef OPTICALLY_THICK_RADIATION
 #ifdef NLTE_CHROMOSPHERE
@@ -1612,12 +1639,24 @@ void CAdaptiveMesh::EnforceBoundaryConditions( void )
 	pActiveCell = pStartOfCurrentRow;
 	pActiveCell->GetCellProperties( &(CellProperties[0]) );
 	CellProperties[0].rho_v[1] = 0.0;
-	pActiveCell->UpdateCellProperties( &(CellProperties[0]) );
-
+	#ifdef TIME_VARIABLE_ABUNDANCES 
+    #ifdef PONDEROMOTIVE
+	CellProperties[0].rho_vp_f[1] = 0.0;
+	#endif // PONDEROMOTIVE
+    #endif // TIME_VARIABLE_ABUNDANCES
+    pActiveCell->UpdateCellProperties( &(CellProperties[0]) );
+    
+    
 	pActiveCell = pActiveCell->pGetPointer( RIGHT );
 	pActiveCell->GetCellProperties( &(CellProperties[0]) );
 	CellProperties[0].rho_v[1] = 0.0;
+    #ifdef TIME_VARIABLE_ABUNDANCES 
+    #ifdef PONDEROMOTIVE
+	CellProperties[0].rho_vp_f[1] = 0.0;
+    #endif // PONDEROMOTIVE
+    #endif // TIME_VARIABLE_ABUNDANCES
 	pActiveCell->UpdateCellProperties( &(CellProperties[0]) );
+
 
 #ifdef OPEN_FIELD
 
@@ -1682,8 +1721,8 @@ void CAdaptiveMesh::EnforceBoundaryConditions( void )
 	GhostCellProperties[0].rho_f[1] = CellProperties[1].rho_f[1];
 	GhostCellProperties[1].rho_f[1] = CellProperties[0].rho_f[1];
 #ifdef PONDEROMOTIVE
-	GhostCellProperties[0].rho_vp_f[1] = CellProperties[1].rho_vp_f[1];
-	GhostCellProperties[1].rho_vp_f[1] = CellProperties[0].rho_vp_f[1];
+	GhostCellProperties[0].rho_vp_f[1] = - CellProperties[1].rho_vp_f[1];
+	GhostCellProperties[1].rho_vp_f[1] = - CellProperties[0].rho_vp_f[1];
 #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -1714,10 +1753,41 @@ void CAdaptiveMesh::EnforceBoundaryConditions( void )
 	fds = ( 0.5 * CellProperties[1].cell_width ) + ( GhostCellProperties[0].cell_width ) + ( 0.5 * GhostCellProperties[1].cell_width );
 	GhostCellProperties[1].rho[1] = CellProperties[1].rho[1] + ( fdrhods * fds );
 
+    #ifdef TIME_VARIABLE_ABUNDANCES
+    fds = ( 0.5 * CellProperties[0].cell_width ) + ( 0.5 * CellProperties[1].cell_width );
+    fv[0] = CellProperties[0].rho_v[1] / CellProperties[0].rho[1];
+    fv[1] = CellProperties[1].rho_v[1] / CellProperties[1].rho[1];
+    #ifdef PONDEROMOTIVE
+    fv[0] += CellProperties[0].rho_vp_f[1] / CellProperties[0].rho_f[1];
+    fv[1] += CellProperties[1].rho_vp_f[1] / CellProperties[1].rho_f[1];
+    #endif // PONDEROMOTIVE
+    fdvds = ( fv[1] - fv[0] ) / fds;
+    
+    if( fv[1] > 0.0 ) {
+		fdrhods = - ( CellProperties[1].rho_f[1] / fv[1] ) * fdvds;
+		if( fdrhods > 0.0 ) fdrhods = 0.0;
+	} else {
+		fdrhods = 0.0;
+	}
+    
+    fds = ( 0.5 * CellProperties[1].cell_width ) + ( 0.5 * GhostCellProperties[0].cell_width );
+	GhostCellProperties[0].rho_f[1] = CellProperties[1].rho_f[1] + ( fdrhods * fds );
+	fds = ( 0.5 * CellProperties[1].cell_width ) + ( GhostCellProperties[0].cell_width ) + ( 0.5 * GhostCellProperties[1].cell_width );
+	GhostCellProperties[1].rho_f[1] = CellProperties[1].rho_f[1] + ( fdrhods * fds );
+    #endif // TIME_VARIABLE_ABUNDANCES
+    
+
 	// MOMENTUM DENSITY
 	// Constant mass flux
 	GhostCellProperties[0].rho_v[1] = CellProperties[1].rho_v[1];
 	GhostCellProperties[1].rho_v[1] = GhostCellProperties[0].rho_v[1];
+    
+    #ifdef TIME_VARIABLE_ABUNDANCES
+    #ifdef PONDEROMOTIVE
+    GhostCellProperties[0].rho_vp_f[1] = CellProperties[1].rho_vp_f[1];
+    GhostCellProperties[1].rho_vp_f[1] = GhostCellProperties[0].rho_vp_f[1];
+    #endif // PONDEROMOTIVE
+    #endif // TIME_VARIABLE_ABUNDANCES
 
 	// ENERGY DENSITY
 	// Constant energy flux
@@ -1750,16 +1820,6 @@ void CAdaptiveMesh::EnforceBoundaryConditions( void )
 #endif // NLTE_CHROMOSPHERE
 #endif // OPTICALLY_THICK_RADIATION
 
-#ifdef TIME_VARIABLE_ABUNDANCES
-    // Assume that the ghost cells have coronal abundance factors
-    GhostCellProperties[0].rho_f[1] = CORONAL_ABUNDANCE_FACTOR * GhostCellProperties[0].rho[1];
-    GhostCellProperties[1].rho_f[1] = CORONAL_ABUNDANCE_FACTOR * GhostCellProperties[1].rho[1];
-#ifdef PONDEROMOTIVE
-    GhostCellProperties[0].rho_vp_f[1] = CellProperties[1].rho_vp_f[1];
-    GhostCellProperties[1].rho_vp_f[1] = GhostCellProperties[0].rho_vp_f[1];
-#endif // PONDEROMOTIVE
-
-#endif // TIME_VARIABLE_ABUNDANCES
 
 #endif // FORCE_SYMMETRY
 
@@ -1773,11 +1833,21 @@ void CAdaptiveMesh::EnforceBoundaryConditions( void )
 	pActiveCell = pEndOfCurrentRow;
 	pActiveCell->GetCellProperties( &(CellProperties[1]) );
 	CellProperties[1].rho_v[1] = 0.0;
-	pActiveCell->UpdateCellProperties( &(CellProperties[1]) );
+	#ifdef TIME_VARIABLE_ABUNDANCES 
+    #ifdef PONDEROMOTIVE
+	CellProperties[1].rho_vp_f[1] = 0.0;
+	#endif // PONDEROMOTIVE
+    #endif // TIME_VARIABLE_ABUNDANCES
+    pActiveCell->UpdateCellProperties( &(CellProperties[1]) );
 
 	pActiveCell = pActiveCell->pGetPointer( LEFT );
 	pActiveCell->GetCellProperties( &(CellProperties[1]) );
 	CellProperties[1].rho_v[1] = 0.0;
+    	#ifdef TIME_VARIABLE_ABUNDANCES 
+    #ifdef PONDEROMOTIVE
+	CellProperties[1].rho_vp_f[1] = 0.0;
+	#endif // PONDEROMOTIVE
+    #endif // TIME_VARIABLE_ABUNDANCES
 	pActiveCell->UpdateCellProperties( &(CellProperties[1]) );
 
 #endif // OPEN_FIELD

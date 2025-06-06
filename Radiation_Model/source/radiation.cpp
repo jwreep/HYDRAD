@@ -276,18 +276,32 @@ return ppElements[i]->GetAbundance();
 #ifdef TIME_VARIABLE_ABUNDANCES
 double CRadiation::GetFIP( int iZ )
 {
-int i;
+    int i;
 
-// Find the required element
-for( i=0; i<NumElements; i++ )
-    if( iZ == pZ[i] ) break;
+    // Find the required element
+    for( i=0; i<NumElements; i++ )
+        if( iZ == pZ[i] ) break;
 
-if( i == NumElements ) return 0.0;
+    if( i == NumElements ) return 0.0;
 
-return ppElements[i]->GetFIP();
+    return ppElements[i]->GetFIP();
 }
 
 #ifdef PONDEROMOTIVE
+double CRadiation::GetMass( int iZ )
+{
+    int i;
+    
+    // Find the required element
+    for( i=0; i<NumElements; i++ )
+        if( iZ == pZ[i] ) break;
+
+    if( i == NumElements ) return 0.0;
+    
+    return ppElements[i]->GetMass();
+
+}
+
 double CRadiation::GetLowFIPAbundance()
 {
     int i;
