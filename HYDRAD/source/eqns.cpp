@@ -293,13 +293,17 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
          // Set the initial abundance factors to photospheric for cells in the chromosphere
          if (CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE)
          {
+             CellProperties.AF[0] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
              CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+             CellProperties.AF[2] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
          // and set the initial abundance factors to coronal for cells above the chromosphere
          else
          {
              //CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
+             CellProperties.AF[0] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
              CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+             CellProperties.AF[2] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
          CellProperties.rho_f[1] = CellProperties.AF[1] * CellProperties.rho[1];
          #ifdef PONDEROMOTIVE
@@ -357,13 +361,17 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
          // Set the initial abundance factors to photospheric for cells in the chromosphere
          if (CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE)
          {
+             CellProperties.AF[0] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
              CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+             CellProperties.AF[2] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
          // and set the initial abundance factors to coronal for cells above the chromosphere
          else
          {
              //CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
+             CellProperties.AF[0] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
              CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+             CellProperties.AF[2] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
          
          CellProperties.rho_f[1] = CellProperties.AF[1] * CellProperties.rho[1];
@@ -1159,12 +1167,16 @@ int j;
             if( CellProperties.T[HYDROGEN] < 3.0E4 )
             #endif // OPTICALLY_THICK_RADIATION
             {
+                CellProperties.AF[0] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
                 CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+                CellProperties.AF[2] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
             }
             else
             {
                 //CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
+                CellProperties.AF[0] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
                 CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+                CellProperties.AF[2] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
             }
             
             CellProperties.rho_f[1] = CellProperties.AF[1] * CellProperties.rho[1];
@@ -2988,7 +3000,7 @@ int j;
                 CellProperties.ponderomotive_a += 0.25 * (CellProperties.elsasser_I[j] * CellProperties.dIbyds[j]);
         }
             
-        //if( (current_time < 1000.0) || (current_time > 1100.0) )
+        //if( (current_time > 100.0) )
         //    CellProperties.ponderomotive_a = 0.0;
             
         LowerValue = CellProperties.rho_f[0] * (CellProperties.v_p[0] + CellProperties.v[0]);
@@ -3013,7 +3025,7 @@ int j;
             CellProperties.dvpbydt = - ( UpperValue - LowerValue ) / CellProperties.cell_width;
             CellProperties.dvpbydt += ( CellProperties.rho_f[1] * CellProperties.ponderomotive_a );
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
-        
+                
         LowerValue = CellProperties.rho_vp_f[0];
         UpperValue = CellProperties.rho_vp_f[2];
         #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
@@ -3021,16 +3033,16 @@ int j;
         #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
             CellProperties.dvpbydt += CellProperties.v[1] * ((UpperValue - LowerValue) / CellProperties.cell_width);
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
-        
-        LowerValue = CellProperties.AF[0];
-        UpperValue = CellProperties.AF[2];
-        //CellProperties.dvpbydt -= ( AVERAGE_PARTICLE_MASS / low_FIP_mass ) * CellProperties.P[1][HYDROGEN] * ((UpperValue-LowerValue) / CellProperties.cell_width);
-        
+                
+        LowerValue = CellProperties.AF[0] * CellProperties.P[0][HYDROGEN];
+        UpperValue = CellProperties.AF[2] * CellProperties.P[2][HYDROGEN];
+        CellProperties.dvpbydt += (low_FIP_abundance*CellProperties.AF[1] - 0.2979612) * ((UpperValue-LowerValue)/CellProperties.cell_width);
+                
         // Pressure term
         LowerValue = CellProperties.P[0][HYDROGEN] + CellProperties.P[0][ELECTRON];
         UpperValue = CellProperties.P[2][HYDROGEN] + CellProperties.P[2][ELECTRON];
-        //CellProperties.dvpbydt += CellProperties.AF[1] * ((UpperValue - LowerValue) / CellProperties.cell_width);
-                
+        CellProperties.dvpbydt += CellProperties.AF[1] * ((UpperValue - LowerValue) / CellProperties.cell_width);
+       
         // Calculate the collision frequencies between low FIP metals (m) and hydrogen (H I and H II),
         // as well as between metals and helium (He I, He II, He III)
         fSum_neutral = 0.0;
@@ -3135,14 +3147,13 @@ int j;
         nu_m_HII *= (1.4548e-13) * (1.0-CellProperties.HI) * CellProperties.n[HYDROGEN] / pow(CellProperties.T[HYDROGEN], 1.5);
         nu_m_HeII *= (1.4548e-13) * (fHeliumAbundance * pHeliumIonFrac[1]) * CellProperties.n[HYDROGEN] / pow(CellProperties.T[HYDROGEN], 1.5);
         nu_m_HeIII *= (4.0*1.4548e-13) * (fHeliumAbundance * pHeliumIonFrac[2]) * CellProperties.n[HYDROGEN] / pow(CellProperties.T[HYDROGEN], 1.5);
-        
-        //printf("s %.5e\tnu %.3e\trvf %.3e\tf %.3e\tvp %.3e\n", CellProperties.s[1], (nu_m_HI + nu_m_HII + nu_m_HeI + nu_m_HeII + nu_m_HeIII), CellProperties.rho_vp_f[1], CellProperties.AF[1], CellProperties.v_p[1]);
-        //if(CellProperties.s[1] < 1.2*INJECTION_HEIGHT)
-        //    printf("s %.5e\tdrvp %.3e\tvp %.3e\trfv %.3e\trf %.3e\tct %.3e\tnu %.3e\n", CellProperties.s[1], CellProperties.dvpbydt, CellProperties.v_p[1], CellProperties.rho_vp_f[1], CellProperties.rho_f[1],
-        //    CellProperties.rho_vp_f[1] * (nu_m_HI + nu_m_HII + nu_m_HeI + nu_m_HeII + nu_m_HeIII), (nu_m_HI + nu_m_HII + nu_m_HeI + nu_m_HeII + nu_m_HeIII));
-        
+                
         // Finally, add the collisions term to the low FIP momentum equation!
+        // 8/1/25 -- treated with a semi-implicit method below.  nu can be 10^10 Hz near the photosphere, which causes
+        // stability issues.  
         //CellProperties.dvpbydt -= CellProperties.rho_vp_f[1] * (nu_m_HI + nu_m_HII + nu_m_HeI + nu_m_HeII + nu_m_HeIII);
+        
+        CellProperties.nu_LF = (nu_m_HI + nu_m_HII + nu_m_HeI + nu_m_HeII + nu_m_HeIII);
         
         if( fabs(CellProperties.dvpbydt) < 1e-20 ) CellProperties.dvpbydt = 0.0;
         #endif // PONDEROMOTIVE
@@ -3660,13 +3671,19 @@ pActiveCell->GetCellProperties( &CellProperties );
     
     pNewCellProperties->rho_f[1] = CellProperties.rho_f[1] + ( delta_t * CellProperties.dAFbydt );
     #ifdef PONDEROMOTIVE
-    pNewCellProperties->rho_vp_f[1] = CellProperties.rho_vp_f[1] + ( delta_t * CellProperties.dvpbydt) ;
+    //pNewCellProperties->rho_vp_f[1] = CellProperties.rho_vp_f[1] + ( delta_t * CellProperties.dvpbydt) ;
+    if ( (CellProperties.nu_LF > 0.0) && (CellProperties.nu_LF * delta_t > 1e2) )
+    {
+        // The collision frequency can be much larger than 1/dt, so we use a semi-implicit method for the collisional term
+        pNewCellProperties->rho_vp_f[1] = CellProperties.rho_vp_f[1] * exp(-delta_t * CellProperties.nu_LF) 
+                                            + (1.0 - exp(-delta_t * CellProperties.nu_LF)) * (CellProperties.dvpbydt / CellProperties.nu_LF);
+    }
+    else
+    {
+        // No collisional damping, just explicit update
+        pNewCellProperties->rho_vp_f[1] = CellProperties.rho_vp_f[1] + ( delta_t * CellProperties.dvpbydt) ;
+    }
     #endif // PONDEROMOTIVE
-    
-    // Two-step Lax-Wendroff method:
-    //pNewCellProperties->half_rho_f[0] = 0.5*(CellProperties.rho_f[1] + RightCellProperties.rho_f[1]) - 0.5*delta_t*(RightCellProperties.dAFbydt - CellProperties.dAFbydt);
-    //pNewCellProperties->half_rho_f[1] = 0.5*(CellProperties.rho_f[1] + LeftCellProperties.rho_f[1]) - 0.5*delta_t*(CellProperties.dAFbydt - LeftCellProperties.dAFbydt);
-    
     
 #endif // TIME_VARIABLE_ABUNDANCES
 }
@@ -3712,7 +3729,19 @@ int j;
     pCellProperties->rho_f[1] = BottomCellProperties.rho_f[1] + ( delta_t * pCellProperties->dAFbydt );
     
     #ifdef PONDEROMOTIVE
-    pCellProperties->rho_vp_f[1] = BottomCellProperties.rho_vp_f[1] + ( delta_t * pCellProperties->dvpbydt);
+    //pCellProperties->rho_vp_f[1] = BottomCellProperties.rho_vp_f[1] + ( delta_t * pCellProperties->dvpbydt);
+
+    if( (pCellProperties->nu_LF > 0.0) && (pCellProperties->nu_LF * delta_t > 1e2) )
+    {   
+        // The collision frequency can be much larger than 1/dt, so we use a semi-implicit method for the collisional term
+        pCellProperties->rho_vp_f[1] = BottomCellProperties.rho_vp_f[1] * exp(-delta_t * pCellProperties->nu_LF) 
+                                        + (1.0 - exp(-delta_t * pCellProperties->nu_LF)) * (pCellProperties->dvpbydt / pCellProperties->nu_LF);
+    }
+    else
+    {
+        // No collisional damping, just explicit update
+        pCellProperties->rho_vp_f[1] = BottomCellProperties.rho_vp_f[1] + ( delta_t * pCellProperties->dvpbydt);
+    }
     #endif // PONDEROMOTIVE
     
 #endif // TIME_VARIABLE_ABUNDANCES

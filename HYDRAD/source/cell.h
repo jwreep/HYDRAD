@@ -81,6 +81,7 @@ struct AdaptiveMeshCellProperties {
         double B[3];             // field strength [G]
         double v_A[3];           // Alfven speed [cm/s]
         double rho_vp_f[3];
+        double nu_LF;              // The collisional frequency for the drag term
     #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
