@@ -78,10 +78,10 @@ class CElement {
     
     #ifdef TIME_VARIABLE_ABUNDANCES
     // Function to open and read the first ionization potential file
-    void OpenFIPFile( char *szFIPFilename );
+    void OpenFIPFile( const char *szFIPFilename );
     
     #ifdef PONDEROMOTIVE
-    void OpenMassFile( char *szMassFilename );
+    void OpenMassFile( const char *szMassFilename );
     #endif // PONDEROMOTIVE
     #endif // TIME_VARIABLE_ABUNDANCES
 

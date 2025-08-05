@@ -1725,6 +1725,7 @@ double max_AF = 1.0;
 double fSum_neutral, fSum_HII, fSum_HeII, fSum_HeIII;
 double fAbundance, fMass, fFIP, fHeliumAbundance;
 double nu_m_HI, nu_m_HII, nu_m_HeI, nu_m_HeII, nu_m_HeIII, fZ_m;
+double grad_vp, mu_local, mu_base, grad_threshold; // Numerical viscosity variables
 double fIonFrac[31];
 double pHeliumIonFrac[3];
 int *pAtomicNumbers;
@@ -2959,11 +2960,11 @@ int j;
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
                 
         #ifdef PONDEROMOTIVE
-        if( fabs(CellProperties.v_p[1]) < 1e-5 )
+        /*if( fabs(CellProperties.v_p[1]) < 1e-5 )
         {
             CellProperties.v_p[1] = 0.0;
             CellProperties.rho_vp_f[1] = 0.0;
-        }
+        }*/
        
         if( CellProperties.AF[1] > max_AF ) max_AF = CellProperties.AF[1];
        
@@ -3155,7 +3156,49 @@ int j;
         
         CellProperties.nu_LF = (nu_m_HI + nu_m_HII + nu_m_HeI + nu_m_HeII + nu_m_HeIII);
         
+
+        // Numerical viscosity is ALWAYS included in the low-FIP equation for stability.  We use the same methodology as for the bulk
+        // momentum equation.  
+        
+        // This calculation uses the cell boundary mass density from the advection algorithm and the velocity gradient across the boundary from the viscosity algorithm
+        mu_base = ( CellProperties.cell_width * CellProperties.cell_width ) / ( 2.0 * RELATIVE_VISCOUS_TIME_SCALE * ( CellProperties.advection_delta_t / SAFETY_ADVECTION ) );
+        
+        grad_threshold = CellProperties.Cs / CellProperties.cell_width;
+        
+        grad_vp = (CellProperties.v_p[1] - CellProperties.v_p[0]) / CellProperties.cell_width;
+        if ( fabs(grad_vp) > grad_threshold ) 
+        {
+            mu_local = mu_base * ( 1.0 + 2.0*(fabs(grad_vp) - grad_threshold ) );
+        }
+        else
+        {
+            mu_local = mu_base;
+        }
+        LowerValue = mu_local * CellProperties.rho[0] * grad_vp;
+        
+        grad_vp = (CellProperties.v_p[2] - CellProperties.v_p[1]) / CellProperties.cell_width;
+        if ( fabs(grad_vp) > grad_threshold ) 
+        {
+            mu_local = mu_base * ( 1.0 + 2.0*(fabs(grad_vp) - grad_threshold ) );
+        }
+        else
+        {
+            mu_local = mu_base;
+        }
+        UpperValue = mu_local * CellProperties.rho[2] * grad_vp;
+        
+        //LowerValue = term1 * CellProperties.rho[0] * (CellProperties.v_p[1] - CellProperties.v_p[0]) / CellProperties.cell_width;
+        //UpperValue = term1 * CellProperties.rho[2] * (CellProperties.v_p[2] - CellProperties.v_p[1]) / CellProperties.cell_width;
+
+        #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+            CellProperties.dvpbydt += ( UpperValue * fCrossSection[2] - LowerValue *fCrossSection[0] ) / fCellVolume;
+        #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
+            CellProperties.dvpbydt += ( UpperValue - LowerValue ) / CellProperties.cell_width;
+        #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+
+
         if( fabs(CellProperties.dvpbydt) < 1e-20 ) CellProperties.dvpbydt = 0.0;
+
         #endif // PONDEROMOTIVE
     
 #endif // TIME_VARIABLE_ABUNDANCES

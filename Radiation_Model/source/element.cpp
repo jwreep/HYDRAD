@@ -301,7 +301,7 @@ fclose( pFile );
 }
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-void CElement::OpenFIPFile( char *szFIPFilename )
+void CElement::OpenFIPFile( const char *szFIPFilename )
 {
 FILE *pFile;
 double fTemp;
@@ -339,7 +339,7 @@ fclose( pFile );
 }
 
 #ifdef PONDEROMOTIVE
-void CElement::OpenMassFile( char *szMassFilename )
+void CElement::OpenMassFile( const char *szMassFilename )
 {
 FILE *pFile;
 double fTemp;
