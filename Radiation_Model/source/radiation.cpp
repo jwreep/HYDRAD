@@ -311,7 +311,7 @@ double CRadiation::GetLowFIPAbundance()
     for( i=0; i<NumElements; i++ )
     {
         if(  ppElements[i]->GetFIP() <= LOW_FIP_THRESHOLD )
-            sum += ppElements[i]->GetAbundance();
+            sum += ppElements[i]->GetAbundance() * (ppElements[i]->GetMass() / PROTON_MASS);
     }
     
     return sum;

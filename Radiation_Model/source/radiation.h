@@ -76,7 +76,7 @@ class CRadiation {
     #ifdef PONDEROMOTIVE
     // Function to return the mass (in g) of a specified element
     double GetMass( int iZ );
-    // Function to return the summed photospheric abundance of all low FIP elements
+    // Function to return the summed mass-weighted photospheric abundance of all low FIP elements
     double GetLowFIPAbundance();
     // Function to return the sum of the low FIP mass times abundance 
     // (used to calculate a weighted average of the low FIP mass)

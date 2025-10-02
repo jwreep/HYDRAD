@@ -82,6 +82,8 @@ struct AdaptiveMeshCellProperties {
         double v_A[3];           // Alfven speed [cm/s]
         double rho_vp_f[3];
         double nu_LF;              // The collisional frequency for the drag term
+        double continuity_flux; // The continuity flux from the left cell edge, used for dealing with low-FIP shocks (Rusanov scheme)
+        double momentum_flux;  // The momentum flux from the left cell edge, used for dealing with low-FIP shocks (Rusanov scheme)
     #endif // PONDEROMOTIVE
 #endif // TIME_VARIABLE_ABUNDANCES
 
