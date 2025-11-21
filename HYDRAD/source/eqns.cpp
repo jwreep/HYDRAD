@@ -2324,8 +2324,21 @@ int j;
             #ifdef RETURN_CURRENT
             if( CellProperties.eta_S > 0.0 && CellProperties.T[ELECTRON] > OPTICALLY_THICK_TEMPERATURE )
             {
-                CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
-                CellProperties.beam_QH = CellProperties.TE_KE_term[4][HYDROGEN];
+                CellProperties.beam_QH = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
+                CellProperties.TE_KE_term[4][ELECTRON] += CellProperties.beam_QH;
+            }
+            else if( CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE )
+            {
+                // Collision frequencies from Russell & Fletcher 2013; Reep & Russell 2016
+                CellProperties.nu_ei = 5.8786066e-24 * CellProperties.n[HYDROGEN] * CellProperties.HI * fLambda1 
+                                        * pow(BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON], -1.5) ;
+                CellProperties.nu_en = 4.5e-9 * sqrt(CellProperties.T[ELECTRON]) * (1. - 1.35e-4 * CellProperties.T[ELECTRON]) 
+                                                                    * (CellProperties.n[HYDROGEN] * (1.0 - CellProperties.HI));
+                
+                CellProperties.eta_S = 3.948452165e-9 * (CellProperties.nu_ei + CellProperties.nu_en ) / ( CellProperties.n[ELECTRON] );
+                
+                CellProperties.beam_QH = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
+                CellProperties.TE_KE_term[4][ELECTRON] += CellProperties.beam_QH;
             }
             #endif // RETURN_CURRENT
         }
@@ -2333,13 +2346,13 @@ int j;
         {
             CellProperties.TE_KE_term[4][ELECTRON] = CellProperties.beam_Qe;
             #ifdef RETURN_CURRENT
-            CellProperties.TE_KE_term[4][HYDROGEN] = CellProperties.beam_QH;
+            CellProperties.TE_KE_term[4][ELECTRON] += CellProperties.beam_QH;
             #endif // RETURN_CURRENT
         }
         
         #ifdef OPTICALLY_THICK_RADIATION
             #ifdef NLTE_CHROMOSPHERE
-                pHeat->SetQbeam( CellProperties.s[1], CellProperties.TE_KE_term[4][ELECTRON] );
+                pHeat->SetQbeam( CellProperties.s[1], CellProperties.beam_Qe );
             #endif // NLTE_CHROMOSPHERE
         #endif // OPTICALLY_THICK_RADIATION
     
@@ -2545,8 +2558,21 @@ int j;
             #ifdef RETURN_CURRENT
             if( CellProperties.eta_S > 0.0 && CellProperties.T[ELECTRON] > OPTICALLY_THICK_TEMPERATURE )
             {
-                CellProperties.TE_KE_term[4][HYDROGEN] = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
-                CellProperties.beam_QH = CellProperties.TE_KE_term[4][HYDROGEN];
+                CellProperties.beam_QH = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
+                CellProperties.TE_KE_term[4][ELECTRON] += CellProperties.beam_QH; 
+            }
+            else if( CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE )
+            {
+                // Collision frequencies from Russell & Fletcher 2013; Reep & Russell 2016
+                CellProperties.nu_ei = 5.8786066e-24 * CellProperties.n[HYDROGEN] * CellProperties.HI * fLambda1 
+                                        * pow(BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON], -1.5) ;
+                CellProperties.nu_en = 4.5e-9 * sqrt(CellProperties.T[ELECTRON]) * (1. - 1.35e-4 * CellProperties.T[ELECTRON]) 
+                                                                    * (CellProperties.n[HYDROGEN] * (1.0 - CellProperties.HI));
+                
+                CellProperties.eta_S = 3.948452165e-9 * (CellProperties.nu_ei + CellProperties.nu_en ) / ( CellProperties.n[ELECTRON] );
+                
+                CellProperties.beam_QH = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
+                CellProperties.TE_KE_term[4][ELECTRON] += CellProperties.beam_QH;
             }
             #endif // RETURN_CURRENT
         }
@@ -2554,13 +2580,13 @@ int j;
         {
             CellProperties.TE_KE_term[4][ELECTRON] = CellProperties.beam_Qe;
             #ifdef RETURN_CURRENT
-            CellProperties.TE_KE_term[4][HYDROGEN] = CellProperties.beam_QH;
+            CellProperties.TE_KE_term[4][ELECTRON] += CellProperties.beam_QH;
             #endif // RETURN_CURRENT
         }
             
         #ifdef OPTICALLY_THICK_RADIATION
             #ifdef NLTE_CHROMOSPHERE
-                pHeat->SetQbeam( CellProperties.s[1], CellProperties.TE_KE_term[4][ELECTRON] );
+                pHeat->SetQbeam( CellProperties.s[1], CellProperties.beam_Qe );
             #endif // NLTE_CHROMOSPHERE
         #endif // OPTICALLY_THICK_RADIATION
         

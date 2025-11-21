@@ -80,7 +80,7 @@ struct AdaptiveMeshCellProperties {
             double beam_Qe;
             
             #ifdef RETURN_CURRENT
-            double F_RC, eta_S, beam_QH;
+            double F_RC, eta_S, beam_QH, nu_ei, nu_en;
             #endif // RETURN_CURRENT
         #endif // KINETIC_BEAM
 	#endif // BEAM_HEATING
@@ -95,7 +95,7 @@ struct AdaptiveMeshCellProperties {
             double nt_energy[N_NT_ENERGY], E_thermal, E_min, F_ex[N_NT_ENERGY], dFebyds, sum_F_ex;
             double beam_Qe;
             #ifdef RETURN_CURRENT
-            double F_RC, eta_S, beam_QH;
+            double F_RC, eta_S, beam_QH, nu_ei, nu_en;
             #endif // RETURN_CURRENT
         #endif // KINETIC_BEAM
 	#endif // BEAM_HEATING
