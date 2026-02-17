@@ -89,7 +89,8 @@ class CEquations {
 
 #if defined(BEAM_HEATING) && defined(KINETIC_BEAM)
     // Use the collisional time scale to determine when to recalculate the beam heating
-    double minimum_collision_delta_t, beam_update_time;
+    double minimum_collision_delta_t;
+    double beam_update_time = -1.0;
 #endif // BEAM_HEATING && KINETIC_BEAM
 
     // Pointer to the left-most cell at the previous time (the start of the previous row)

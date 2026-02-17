@@ -76,11 +76,11 @@ struct AdaptiveMeshCellProperties {
 	    // The hydrogen and modified hydrogen column densities
 	    double nH_c, nH_star_c;
         #ifdef KINETIC_BEAM
-            double nt_energy[N_NT_ENERGY], E_thermal, F_ex[N_NT_ENERGY], dFebyds, sum_F_ex;
+            double nt_energy[N_NT_ENERGY], E_thermal, F_ex[N_NT_ENERGY], N_ex[N_NT_ENERGY], dFebyds;
             double beam_Qe;
             
             #ifdef RETURN_CURRENT
-            double F_RC, eta_S, beam_QH, nu_ei, nu_en;
+            double F_RC, eta_S, beam_QH, nu_ei, nu_en, sum_F_ex, sum_N_ex;
             #endif // RETURN_CURRENT
         #endif // KINETIC_BEAM
 	#endif // BEAM_HEATING
@@ -92,10 +92,10 @@ struct AdaptiveMeshCellProperties {
 	    // The neutral hydrogen population fraction, and the hydrogen and modified hydrogen column densities
 	    double HI, nH_c, nH_star_c;
         #ifdef KINETIC_BEAM
-            double nt_energy[N_NT_ENERGY], E_thermal, E_min, F_ex[N_NT_ENERGY], dFebyds, sum_F_ex;
+            double nt_energy[N_NT_ENERGY], E_thermal, E_min, F_ex[N_NT_ENERGY], N_ex[N_NT_ENERGY], dFebyds;
             double beam_Qe;
             #ifdef RETURN_CURRENT
-            double F_RC, eta_S, beam_QH, nu_ei, nu_en;
+            double F_RC, eta_S, beam_QH, nu_ei, nu_en, sum_F_ex, sum_N_ex;
             #endif // RETURN_CURRENT
         #endif // KINETIC_BEAM
 	#endif // BEAM_HEATING
