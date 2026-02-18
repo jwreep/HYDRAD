@@ -2294,7 +2294,7 @@ int j;
                     }
                     else
                     {
-                        CellProperties.F_ex[j] *= pow(E_nt0 / CellProperties.nt_energy[j], 1.0 - delta);
+                        CellProperties.F_ex[j] = CellProperties.N_ex[j] * CellProperties.nt_energy[j];
                     }
                     
                     CellProperties.dFebyds += (F_ex0 - CellProperties.F_ex[j])/(CellProperties.cell_width);
@@ -2338,8 +2338,8 @@ int j;
                         }
                         else
                         {
-                            CellProperties.F_ex[j] = RightCellProperties.F_ex[j] * pow(RightCellProperties.nt_energy[j] / CellProperties.nt_energy[j], 1.0 - delta);
                             CellProperties.N_ex[j] = RightCellProperties.N_ex[j];
+                            CellProperties.F_ex[j] = CellProperties.N_ex[j] * CellProperties.nt_energy[j];
                         }
                      
                         //CellProperties.dFebyds += (CellProperties.F_ex[j] - RightCellProperties.F_ex[j])/(CellProperties.s[1] - RightCellProperties.s[1]);
@@ -2575,7 +2575,7 @@ int j;
                     }
                     else
                     {
-                        CellProperties.F_ex[j] *= pow(E_nt0 / CellProperties.nt_energy[j], 1.0 - delta);
+                        CellProperties.F_ex[j] = CellProperties.N_ex[j] * CellProperties.nt_energy[j];
                     }
                     
                     CellProperties.dFebyds += (F_ex0 - CellProperties.F_ex[j])/(CellProperties.cell_width);
@@ -2621,8 +2621,8 @@ int j;
                         }
                         else
                         {
-                            CellProperties.F_ex[j] = LeftCellProperties.F_ex[j] * pow(LeftCellProperties.nt_energy[j] / CellProperties.nt_energy[j], 1.0 - delta);
                             CellProperties.N_ex[j] = LeftCellProperties.N_ex[j];
+                            CellProperties.F_ex[j] = CellProperties.N_ex[j] * CellProperties.nt_energy[j];
                         }
                     
                         //CellProperties.dFebyds += (CellProperties.F_ex[j] - LeftCellProperties.F_ex[j])/(CellProperties.s[0] - LeftCellProperties.s[0]);
