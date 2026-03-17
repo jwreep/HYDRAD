@@ -1510,6 +1510,7 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
         // Step size in energy space for the beam calculation, setting the maximum energy to encompass 99% of the beam energy
         //double deltaE_nt = cutoff_energy * (pow(100, 1.0/delta) - 1.0) / N_NT_ENERGY;  
         double deltaE_nt = cutoff_energy * pow(100.0, (1.0/(delta-1.0))) / N_NT_ENERGY;
+
         x_RC_left = -1.0;
         x_RC_right = -1.0;
     
@@ -2192,12 +2193,24 @@ int j;
             CellProperties.F_RC = 0.0;
             CellProperties.beam_QH = 0.0;
             
-            // Calculate the Spitzer resistivity (Z = 1.4)
-            // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
-            // 1.0246659627406321e-08 = all that / 1.96 where 1.96 is a correction factor introduced by Braginskii 1965
-            //CellProperties.eta_S = 1.0246659627406321e-08 * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
-            CellProperties.eta_S = 1.0246659627406321e-08 * pow(CellProperties.T[ELECTRON], -1.5)  * 
-                    getLogLambda_ei(CellProperties.T[ELECTRON], CellProperties.n[ELECTRON], CellProperties.T[HYDROGEN], CellProperties.n[HYDROGEN], AVERAGE_PARTICLE_MASS, 1.0);
+            if( CellProperties.T[ELECTRON] > OPTICALLY_THICK_TEMPERATURE )
+            {
+                // Calculate the Spitzer resistivity (Z = 1.4)
+                // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
+                // 1.0246659627406321e-08 = all that / 1.96 where 1.96 is a correction factor introduced by Braginskii 1965
+                CellProperties.eta_S = 1.0246659627406321e-08 * pow(CellProperties.T[ELECTRON], -1.5)  * 
+                        getLogLambda_ei(CellProperties.T[ELECTRON], CellProperties.n[ELECTRON], CellProperties.T[HYDROGEN], CellProperties.n[HYDROGEN], AVERAGE_PARTICLE_MASS, 1.0);
+            }
+            else
+            {
+            // Collision frequencies from Russell & Fletcher 2013; Reep & Russell 2016
+                CellProperties.nu_ei = 5.8786066e-24 * CellProperties.n[HYDROGEN] * CellProperties.HI * fLambda1 
+                                            * pow(BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON], -1.5) ;
+                CellProperties.nu_en = 4.5e-9 * sqrt(CellProperties.T[ELECTRON]) * (1. - 1.35e-4 * CellProperties.T[ELECTRON]) 
+                                                                    * (CellProperties.n[HYDROGEN] * (1.0 - CellProperties.HI));
+                
+                CellProperties.eta_S = 3.948452165e-9 * (CellProperties.nu_ei + CellProperties.nu_en ) / ( CellProperties.n[HYDROGEN] );
+            }
             
             if( pActiveCell == pCentreOfCurrentRow )
             {
@@ -2298,7 +2311,7 @@ int j;
                     }
                     
                     CellProperties.dFebyds += (F_ex0 - CellProperties.F_ex[j])/(CellProperties.cell_width);
-                    
+                 
                 }
                 else
                 {
@@ -2358,33 +2371,6 @@ int j;
             {   // If it's thermalized, no beam energy left to heat the plasma!
                 CellProperties.beam_Qe = abs(CellProperties.dFebyds);
                 CellProperties.TE_KE_term[4][ELECTRON] = CellProperties.beam_Qe;
-            
-                #ifdef RETURN_CURRENT
-                //if( CellProperties.F_RC > 0.0 && CellProperties.T[ELECTRON] >= 1.0E5 )
-                if( CellProperties.F_RC > 0.0 )
-                {
-                    CellProperties.beam_QH = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
-                    CellProperties.TE_KE_term[4][ELECTRON] += CellProperties.beam_QH;
-                }
-                //else if( CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE )
-                /*else if( CellProperties.T[ELECTRON] < 1.0E5 )
-                {
-                    // Collision frequencies from Russell & Fletcher 2013; Reep & Russell 2016
-                    CellProperties.nu_ei = 5.8786066e-24 * CellProperties.n[HYDROGEN] * CellProperties.HI * fLambda1 
-                                            * pow(BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON], -1.5) ;
-                    CellProperties.nu_en = 4.5e-9 * sqrt(CellProperties.T[ELECTRON]) * (1. - 1.35e-4 * CellProperties.T[ELECTRON]) 
-                                                                    * (CellProperties.n[HYDROGEN] * (1.0 - CellProperties.HI));
-                
-                    CellProperties.eta_S = 3.948452165e-9 * (CellProperties.nu_ei + CellProperties.nu_en ) / ( CellProperties.n[HYDROGEN] );
-                
-                    CellProperties.beam_QH = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
-                    CellProperties.TE_KE_term[4][ELECTRON] += CellProperties.beam_QH;
-                }*/
-                else
-                {
-                    CellProperties.beam_QH = 0.0;
-                }
-                #endif // RETURN_CURRENT
             }
         }
         else 
@@ -2475,12 +2461,25 @@ int j;
             CellProperties.F_RC = 0.0;
             CellProperties.beam_QH = 0.0;
 
-            // Calculate the Spitzer resistivity (Z = 1.4)
-            // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
-            // 1.0246659627406321e-08 = all that / 1.96 where 1.96 is a correction factor introduced by Braginskii 1965
-            //CellProperties.eta_S = 1.0246659627406321e-08 * fLambda2 * pow(CellProperties.T[ELECTRON], -1.5);
-            CellProperties.eta_S = 1.0246659627406321e-08 * pow(CellProperties.T[ELECTRON], -1.5)  * 
-                    getLogLambda_ei(CellProperties.T[ELECTRON], CellProperties.n[ELECTRON], CellProperties.T[HYDROGEN], CellProperties.n[HYDROGEN], AVERAGE_PARTICLE_MASS, 1.0);
+            
+            if( CellProperties.T[ELECTRON] > OPTICALLY_THICK_TEMPERATURE )
+            {
+                // Calculate the Spitzer resistivity (Z = 1.4)
+                // 2.0083453260595434e-08 = 4 sqrt(2 pi)/3 * Z * q_e^2 * m_e^(1/2) * k_B^(-3/2)
+                // 1.0246659627406321e-08 = all that / 1.96 where 1.96 is a correction factor introduced by Braginskii 1965
+                CellProperties.eta_S = 1.0246659627406321e-08 * pow(CellProperties.T[ELECTRON], -1.5)  * 
+                        getLogLambda_ei(CellProperties.T[ELECTRON], CellProperties.n[ELECTRON], CellProperties.T[HYDROGEN], CellProperties.n[HYDROGEN], AVERAGE_PARTICLE_MASS, 1.0);
+            }
+            else
+            {
+            // Collision frequencies from Russell & Fletcher 2013; Reep & Russell 2016
+                CellProperties.nu_ei = 5.8786066e-24 * CellProperties.n[HYDROGEN] * CellProperties.HI * fLambda1 
+                                            * pow(BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON], -1.5) ;
+                CellProperties.nu_en = 4.5e-9 * sqrt(CellProperties.T[ELECTRON]) * (1. - 1.35e-4 * CellProperties.T[ELECTRON]) 
+                                                                    * (CellProperties.n[HYDROGEN] * (1.0 - CellProperties.HI));
+                
+                CellProperties.eta_S = 3.948452165e-9 * (CellProperties.nu_ei + CellProperties.nu_en ) / ( CellProperties.n[HYDROGEN] );
+            }
 
             if( pActiveCell == pCentreOfCurrentRow )
             {
@@ -2579,6 +2578,7 @@ int j;
                     }
                     
                     CellProperties.dFebyds += (F_ex0 - CellProperties.F_ex[j])/(CellProperties.cell_width);
+                    
                 }
                 else
                 {
@@ -2641,33 +2641,6 @@ int j;
             {   // If it's thermalized, no beam energy left to heat the plasma!
                 CellProperties.beam_Qe = abs(CellProperties.dFebyds);
                 CellProperties.TE_KE_term[4][ELECTRON] = CellProperties.beam_Qe;
-            
-                #ifdef RETURN_CURRENT
-                //if( CellProperties.F_RC > 0.0 && CellProperties.T[ELECTRON] >= 1.0E5 )
-                if( CellProperties.F_RC > 0.0 )    
-                {
-                    CellProperties.beam_QH = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
-                    CellProperties.TE_KE_term[4][ELECTRON] += CellProperties.beam_QH; 
-                }
-                //else if( CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE )
-                /*else if( CellProperties.T[ELECTRON] < 1.0E5 )
-                {
-                    // Collision frequencies from Russell & Fletcher 2013; Reep & Russell 2016
-                    CellProperties.nu_ei = 5.8786066e-24 * CellProperties.n[HYDROGEN] * CellProperties.HI * fLambda1 
-                                            * pow(BOLTZMANN_CONSTANT * CellProperties.T[ELECTRON], -1.5) ;
-                    CellProperties.nu_en = 4.5e-9 * sqrt(CellProperties.T[ELECTRON]) * (1. - 1.35e-4 * CellProperties.T[ELECTRON]) 
-                                                                    * (CellProperties.n[HYDROGEN] * (1.0 - CellProperties.HI));
-                
-                    CellProperties.eta_S = 3.948452165e-9 * (CellProperties.nu_ei + CellProperties.nu_en ) / ( CellProperties.n[HYDROGEN] );
-                
-                    CellProperties.beam_QH = pow(CellProperties.F_RC / ELECTRON_CHARGE, 2.0) / CellProperties.eta_S;
-                    CellProperties.TE_KE_term[4][ELECTRON] += CellProperties.beam_QH;
-                }*/
-                else
-                {
-                    CellProperties.beam_QH = 0.0;
-                }
-                #endif // RETURN_CURRENT
             }
         }
         else 
