@@ -3012,96 +3012,25 @@ int j;
         
         // 1. Flux terms:
         
-        // At discontinuities, like opposite flows, we use a Rusanov scheme to help stabilize shocks
-        
-        grad_vp = (RightCellProperties.v_p[1] - CellProperties.v_p[1]) / CellProperties.cell_width;
-        grad_threshold = CellProperties.Cs / CellProperties.cell_width;
-        //if( CellProperties.v_p[1] * RightCellProperties.v_p[1] < 0.0 ) 
-        if( fabs(grad_vp) > grad_threshold || CellProperties.v_p[1] * RightCellProperties.v_p[1] < 0.0 || LeftCellProperties.v_p[1] * CellProperties.v_p[1] < 0.0 )
-        {   // Where the flows are opposite in direction, that is
-            
-            double diffusion_multiplier = 2.0;
-            
-            #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+        LowerValue = CellProperties.rho_f[0] * (CellProperties.v_p[0] + CellProperties.v[0]);
+        UpperValue = CellProperties.rho_f[2] * (CellProperties.v_p[2] + CellProperties.v[2]);
 
-            // Continuity equation:
-            LowerValue = LeftCellProperties.continuity_flux;
-            
-            rus_alpha = diffusion_multiplier * max( fabs( RightCellProperties.v_p[1] + RightCellProperties.v[1] ) + RightCellProperties.Cs,
-                          fabs( CellProperties.v_p[1] + CellProperties.v[1]) + CellProperties.Cs );
-            UpperValue = 0.5 * (RightCellProperties.rho_f[1] * (RightCellProperties.v_p[1] + RightCellProperties.v[1]) 
-                                + CellProperties.rho_f[1] * (CellProperties.v_p[1] + CellProperties.v[1]) ) 
-                        - 0.5 * rus_alpha * (RightCellProperties.rho_f[1] / CalculateCrossSection( RightCellProperties.s[1]/Params.L ) - CellProperties.rho_f[1] / fCrossSection[1] );
-            
+        // Calculate the time derivative of the abundance factor
+        // If we have a ponderomotive acceleration, add in the low FIP velocity
+        #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
             CellProperties.dAFbydt = - ( UpperValue - LowerValue ) / fCellVolume;
-            CellProperties.continuity_flux = UpperValue;
-
-            // Momentum equation:            
-            LowerValue = LeftCellProperties.momentum_flux;
-            
-            rus_alpha = diffusion_multiplier * max( fabs( RightCellProperties.v_p[1] + RightCellProperties.v[1] ) + RightCellProperties.Cs,
-                          fabs( CellProperties.v_p[1] + CellProperties.v[1]) + CellProperties.Cs );
-            UpperValue = 0.5 * (RightCellProperties.rho_vp_f[1] * (RightCellProperties.v_p[1] + RightCellProperties.v[1]) 
-                                + CellProperties.rho_vp_f[1] * (CellProperties.v_p[1] + CellProperties.v[1]) ) 
-                        - 0.5 * rus_alpha * (RightCellProperties.rho_vp_f[1] / CalculateCrossSection( RightCellProperties.s[1]/Params.L ) - CellProperties.rho_vp_f[1] / fCrossSection[1] );
-            
-            CellProperties.dvpbydt = - ( UpperValue - LowerValue ) / fCellVolume;
-            CellProperties.momentum_flux = UpperValue;
-
-            #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
-            
-            // Continuity equation:
-            LowerValue = LeftCellProperties.continuity_flux;
-            
-            rus_alpha = diffusion_multiplier * max( fabs( RightCellProperties.v_p[1] + RightCellProperties.v[1] ) + RightCellProperties.Cs,
-                          fabs( CellProperties.v_p[1] + CellProperties.v[1]) + CellProperties.Cs );
-            UpperValue = 0.5 * (RightCellProperties.rho_f[1] * (RightCellProperties.v_p[1] + RightCellProperties.v[1]) 
-                                + CellProperties.rho_f[1] * (CellProperties.v_p[1] + CellProperties.v[1]) ) 
-                        - 0.5 * rus_alpha * ( RightCellProperties.rho_f[1] - CellProperties.rho_f[1] );
-            
+        #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
             CellProperties.dAFbydt = - ( UpperValue - LowerValue ) / CellProperties.cell_width;
-            CellProperties.continuity_flux = UpperValue;
+        #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
+            
+        LowerValue = CellProperties.rho_vp_f[0] * (CellProperties.v_p[0] + CellProperties.v[0]);
+        UpperValue = CellProperties.rho_vp_f[2] * (CellProperties.v_p[2] + CellProperties.v[2]);
 
-            // Momentum equation:
-            LowerValue = LeftCellProperties.momentum_flux;
-            
-            rus_alpha = diffusion_multiplier * max( fabs( RightCellProperties.v_p[1] + RightCellProperties.v[1] ) + RightCellProperties.Cs,
-                          fabs( CellProperties.v_p[1] + CellProperties.v[1]) + CellProperties.Cs );
-            UpperValue = 0.5 * (RightCellProperties.rho_vp_f[1] * (RightCellProperties.v_p[1] + RightCellProperties.v[1]) 
-                                + CellProperties.rho_vp_f[1] * (CellProperties.v_p[1] + CellProperties.v[1]) ) 
-                        - 0.5 * rus_alpha * (RightCellProperties.rho_vp_f[1] - CellProperties.rho_vp_f[1]);
-            
+        #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+            CellProperties.dvpbydt = - ( UpperValue - LowerValue ) / fCellVolume;
+        #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
             CellProperties.dvpbydt = - ( UpperValue - LowerValue ) / CellProperties.cell_width;
-            CellProperties.momentum_flux = UpperValue;
-
-            #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
-        }
-        else  // Use the standard scheme elsewhere
-        {
-            //LowerValue = CellProperties.rho_f[0] * (CellProperties.v_p[0] + CellProperties.v[0]);
-            LowerValue = LeftCellProperties.continuity_flux;
-            UpperValue = CellProperties.rho_f[2] * (CellProperties.v_p[2] + CellProperties.v[2]);
-
-            // Calculate the time derivative of the abundance factor
-            // If we have a ponderomotive acceleration, add in the low FIP velocity
-            #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
-                CellProperties.dAFbydt = - ( UpperValue - LowerValue ) / fCellVolume;
-            #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
-                CellProperties.dAFbydt = - ( UpperValue - LowerValue ) / CellProperties.cell_width;
-            #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
-            CellProperties.continuity_flux = UpperValue;
-            
-            //LowerValue = CellProperties.rho_vp_f[0] * (CellProperties.v_p[0] + CellProperties.v[0]);
-            LowerValue = LeftCellProperties.momentum_flux;
-            UpperValue = CellProperties.rho_vp_f[2] * (CellProperties.v_p[2] + CellProperties.v[2]);
-
-            #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
-                CellProperties.dvpbydt = - ( UpperValue - LowerValue ) / fCellVolume;
-            #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
-                CellProperties.dvpbydt = - ( UpperValue - LowerValue ) / CellProperties.cell_width;
-            #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
-            CellProperties.momentum_flux = UpperValue;
-        }
+        #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
         
         // 2. Source terms for advection and ponderomotive acceleration:
         LowerValue = CellProperties.v[0];
@@ -3111,7 +3040,7 @@ int j;
             CellProperties.dvpbydt += ( CellProperties.rho_f[1] * CellProperties.ponderomotive_a ) / fCrossSection[1];
         #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
             CellProperties.dvpbydt += CellProperties.rho_vp_f[1] * ((UpperValue - LowerValue) / CellProperties.cell_width);
-             CellProperties.dvpbydt += ( CellProperties.rho_f[1] * CellProperties.ponderomotive_a );
+            CellProperties.dvpbydt += ( CellProperties.rho_f[1] * CellProperties.ponderomotive_a );
        #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
                 
         // 3. Pressure terms -- 
@@ -3246,7 +3175,7 @@ int j;
         // since the low-FIP elements don't have much mass to cause diffusion naturally.  
         
         // Low-FIP shock detector: look for sharp changes in either low-FIP density or low-FIP velocity
-        grad_right = ( RightCellProperties.rho_f[1] - CellProperties.rho_f[1] ) / (0.5 * (CellProperties.rho_f[1] + RightCellProperties.rho_f[1]) );
+        /*grad_right = ( RightCellProperties.rho_f[1] - CellProperties.rho_f[1] ) / (0.5 * (CellProperties.rho_f[1] + RightCellProperties.rho_f[1]) );
         grad_vp = ( RightCellProperties.v_p[1] - CellProperties.v_p[1] ) / CellProperties.Cs;
         
         grad_right = sqrt( grad_right * grad_right + grad_vp * grad_vp );
@@ -3259,7 +3188,7 @@ int j;
         double grad_min = 0.25; 
         double grad_max = 0.5;
         double ramp = 1.0;   
-        double strength = 20.0;   
+        double strength = 5.0;   
             
         // If there is a strong shock, and if it is compressive:
         if( (grad_left > grad_min && CellProperties.v_p[1] - LeftCellProperties.v_p[1] < 0.0 ) 
@@ -3269,31 +3198,48 @@ int j;
             CellProperties.nu_LF *= (1.0 + 0.5 * strength * (1.0 + tanh( ramp*(fmax(grad_left, grad_right)-grad_min)/(grad_max - grad_min) )) );
             CellProperties.collision_delta_t /= (1.0 + 0.5 * strength * (1.0 + tanh( ramp*(fmax(grad_left, grad_right)-grad_min)/(grad_max - grad_min) )) );  
         }
+        */
+        
+        // Physical viscosity
+        #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
+			CellProperties.dvpbydt -= CellProperties.AF[1] * ( ( CellProperties.Feta[2] * fCrossSection[2] ) - ( CellProperties.Feta[0] * fCrossSection[0] ) ) / fCellVolume;
+        #else // USE_POLY_FIT_TO_MAGNETIC_FIELD
+			CellProperties.dvpbydt -= CellProperties.AF[1] * ( CellProperties.Feta[2] - CellProperties.Feta[0] ) / CellProperties.cell_width;
+        #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
 
+        
         // Numerical viscosity is ALWAYS included in the low-FIP equation for stability.  We use the same methodology as for the bulk
         // momentum equation.  
         
         // This calculation uses the cell boundary mass density from the advection algorithm and the velocity gradient across 
         // the boundary from the viscosity algorithm.
+        
+        double ramp = 5.0;
+
         mu_base = ( CellProperties.cell_width * CellProperties.cell_width ) / 
                         ( 2.0 * RELATIVE_VISCOUS_TIME_SCALE * ( CellProperties.advection_delta_t / SAFETY_ADVECTION ) );
         
         grad_threshold = CellProperties.Cs / CellProperties.cell_width;
         
+        
         grad_vp = (CellProperties.v_p[1] - CellProperties.v_p[0]) / CellProperties.cell_width;
+        
         mu_local = mu_base;
         if ( fabs(grad_vp) > grad_threshold ) 
         {
-            mu_local *= ( 1.0 + 3.0*(fabs(grad_vp) - grad_threshold ) );
+            mu_local *= ( 1.0 + ramp*(fabs(grad_vp) - grad_threshold ) );
+            CellProperties.advection_delta_t /= ( 1.0 + ramp*(fabs(grad_vp) - grad_threshold ) );
         }
         LowerValue = mu_local * CellProperties.rho[0] * grad_vp;
         
         grad_vp = (CellProperties.v_p[2] - CellProperties.v_p[1]) / CellProperties.cell_width;
+        //grad_vp = (CellProperties.AF[2] - CellProperties.AF[1]) / CellProperties.cell_width;
         mu_local = mu_base;
         if ( fabs(grad_vp) > grad_threshold ) 
         {
-            mu_local *= ( 1.0 + 3.0*(fabs(grad_vp) - grad_threshold ) );
-        }
+            mu_local *= ( 1.0 + ramp*(fabs(grad_vp) - grad_threshold ) );
+            CellProperties.advection_delta_t /= ( 1.0 + ramp*(fabs(grad_vp) - grad_threshold ) );
+       }
         UpperValue = mu_local * CellProperties.rho[2] * grad_vp;
 
         #ifdef USE_POLY_FIT_TO_MAGNETIC_FIELD
@@ -3302,7 +3248,15 @@ int j;
             CellProperties.dvpbydt += ( UpperValue - LowerValue ) / CellProperties.cell_width;
         #endif // USE_POLY_FIT_TO_MAGNETIC_FIELD
 
-        if( fabs(CellProperties.dvpbydt) < 1e-20 ) CellProperties.dvpbydt = 0.0;
+        //grad_threshold = 0.01 / CellProperties.cell_width;
+        //grad_vp = (CellProperties.AF[1] - CellProperties.AF[0]) / CellProperties.cell_width;
+        mu_base = ( CellProperties.cell_width * CellProperties.cell_width ) / (2.0 * RELATIVE_VISCOUS_TIME_SCALE * ( CellProperties.advection_delta_t / SAFETY_ADVECTION ) );
+        
+        LowerValue = -mu_base * (CellProperties.rho_f[1] - CellProperties.rho_f[0]) / CellProperties.cell_width;
+        UpperValue = -mu_base * (CellProperties.rho_f[2] - CellProperties.rho_f[1]) / CellProperties.cell_width;
+        
+        CellProperties.dAFbydt += CellProperties.rho_f[1] * CellProperties.advection_delta_t * (UpperValue-LowerValue) / CellProperties.cell_width;
+        
 
         #endif // PONDEROMOTIVE
     
