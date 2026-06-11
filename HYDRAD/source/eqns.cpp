@@ -286,7 +286,7 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
          // and set the initial abundance factors to coronal for cells above the chromosphere
          else
          {
-             CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
+             CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
 #endif // TIME_VARIABLE_ABUNDANCES
     
@@ -324,7 +324,7 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
          // and set the initial abundance factors to coronal for cells above the chromosphere
          else
          {
-             CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
+             CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
 #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -1072,7 +1072,7 @@ int j;
             }
             else
             {
-                CellProperties.AF[1] = CORONAL_ABUNDANCE_FACTOR;
+                CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
             }
         }
         #endif // TIME_VARIABLE_ABUNDANCES
@@ -1587,6 +1587,17 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
 	double HeII_IonRate, HeII_RecRate;
 	double tau_IR;
 #endif // BEAM_HEATING
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+    // Hard code the source terms for the moment.  Should be changed to an input config file.
+    double rho_inj = 2.0e-14; // ~ 10^10 cm^-3, from To et al 2024
+    double v_inj = 2.5e7;  // ~ 250 km/s, from To et al 2024
+    double massflux_inj = rho_inj * v_inj;  
+    double T_inj = 1e7;  // K, compare the current sheet in Warren et al 2018
+    double sigma_inj = 1.0e8;  // 1 Mm
+    double AF_inj = 4.0;  // Assuming coronal
+    double s_inj = Params.L / 2.0; // Apex
+#endif // TIME_VARIABLE_ABUNDANCES
 
 #ifdef USE_KINETIC_MODEL
 	CalculateKineticModel( iFirstStep );
@@ -2479,6 +2490,15 @@ int j;
         // Does not depend on the cross-sectional area!
     CellProperties.dAFbydt = - CellProperties.v[1] * ( UpperValue - LowerValue ) / CellProperties.cell_width;
     
+// *****************************************************************************
+// *    SOURCE TERM                                                            *
+// *****************************************************************************
+    
+    // We directly inject mass of arbitrary abundance factor as a source term to both continuity equations
+    //  (This is done in the heating module because it also injects internal energy)
+    CellProperties.drhobydt += pHeat->CalculateMassInjection( current_time, CellProperties.s[1] );
+    CellProperties.dAFbydt += pHeat->CalculateAFInjection( current_time, CellProperties.s[1], CellProperties.rho[1], CellProperties.AF[1] );
+        
 #endif // TIME_VARIABLE_ABUNDANCES
 
 // *****************************************************************************
@@ -2665,6 +2685,16 @@ int j;
 	CellProperties.TE_KE_term[4][HYDROGEN] = HYDROGEN_HEATING * term1;
 #endif // // ELECTRON_HEATING_ONLY || HYDROGEN_HEATING_ONLY
 #endif // BEAM_HEATING
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+    // If we directly inject mass, then we are effectively injecting thermal energy as well
+    //  This calculation adds the injected internal energy in as a heating term
+    term1 = pHeat->CalculateHeatInjection( current_time, CellProperties.s[1] );
+        
+    CellProperties.TE_KE_term[4][ELECTRON] += ( 4.40437e7 * term1 ) ;
+    CellProperties.TE_KE_term[4][HYDROGEN] += ( 3.7996e7 * term1 ) ;
+#endif // TIME_VARIABLE_ABUNDANCES
+
 
 // *****************************************************************************
 // *    RADIATION                                                              *

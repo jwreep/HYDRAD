@@ -42,6 +42,9 @@ GetHeatingData();
 #ifdef OPTICALLY_THICK_RADIATION
 	GetVALHeatingData();
 #endif // OPTICALLY_THICK_RADIATION
+#ifdef TIME_VARIABLE_ABUNDANCES
+    GetInjectionHeatingData();
+#endif // TIME_VARIABLE_ABUNDANCES
 }
 
 void CHeat::FreeAll( void )
@@ -233,6 +236,26 @@ for( i=0; i<iVALHeatingDP; i++ )
 fclose( pFile );
 }
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+void CHeat::GetInjectionHeatingData()
+{
+    FILE *pConfigFile;
+    pConfigFile = fopen( "Heating_Model/config/injection_heating_model.cfg", "r" );
+    
+    // Get the data for direct injection
+    ReadDouble( pConfigFile, &TimeInj );
+    ReadDouble( pConfigFile, &RhoInj );
+    ReadDouble( pConfigFile, &AFInj );
+    ReadDouble( pConfigFile, &VelInj );
+    ReadDouble( pConfigFile, &TempInj );
+    ReadDouble( pConfigFile, &LocationInj );
+    ReadDouble( pConfigFile, &WidthInj );
+    
+    fclose( pConfigFile );
+}
+#endif // TIME_VARIABLE_ABUNDANCES
+
 
 double CHeat::CalculateQuiescentHeating( double s )
 {
@@ -536,3 +559,48 @@ LinearFit( x, y, flog10_rho_c, &fVALHeating );
 return pow( 10.0, fVALHeating );
 }
 #endif // OPTICALLY_THICK_RADIATION
+
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+double CHeat::CalculateMassInjection( double t, double s )
+{
+    if( t <= TimeInj )
+    {
+        return ( ( RhoInj * VelInj ) / (2.5066282746310002 * WidthInj) 
+                    * exp(- pow(s - LocationInj, 2.0) / (2.0 * WidthInj * WidthInj) ) );
+    }
+    else
+    {
+        return 0.0;
+    }
+}
+
+double CHeat::CalculateAFInjection( double t, double s, double rho, double AF )
+{
+    if( t <= TimeInj )
+    {
+        return ( ( RhoInj * VelInj * (AFInj - AF) ) / (2.5066282746310002 * WidthInj * rho)
+                    * exp(- pow(s - LocationInj, 2.0) / (2.0 * WidthInj * WidthInj) ) );
+    }
+    else
+    {
+        return 0.0;
+    }
+}
+
+double CHeat::CalculateHeatInjection( double t, double s )
+{
+    // When we inject mass, we also inject internal energy!
+    // This calculates the injected internal energy, modulo a constant, 
+    // which differs for electrons and ions, and is included in eqns.cpp where this function is called
+    if( t <= TimeInj )
+    {
+        return ( ( TempInj * RhoInj * VelInj / WidthInj )
+                * exp(- pow(s - LocationInj, 2.0) / (2.0 * WidthInj * WidthInj) )  );
+    }
+    else
+    {
+        return 0.0;
+    }       
+}
+#endif // TIME_VARIABLE_ABUNDANCES

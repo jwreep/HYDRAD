@@ -74,6 +74,12 @@ class CHeat {
     void GetVALHeatingData( void );
 #endif // OPTICALLY_THICK_RADIATION
 
+#ifdef TIME_VARIABLE_ABUNDANCES
+    // Functionality for direct injection of mass
+    double RhoInj, VelInj, TempInj, AFInj, WidthInj, TimeInj, LocationInj;
+    void GetInjectionHeatingData( void );
+#endif // TIME_VARIABLE_ABUNDANCES
+
     public:
 
     CHeat( void );
@@ -105,6 +111,12 @@ class CHeat {
     // Heating to maintain the lower atmosphere
     double CalculateVALHeating( double flog10_rho_c );
 #endif // OPTICALLY_THICK_RADIATION
+
+#ifdef TIME_VARIABLE_ABUNDANCES
+    double CalculateMassInjection( double t, double s );
+    double CalculateAFInjection( double t, double s, double rho, double AF );
+    double CalculateHeatInjection( double t, double s );
+#endif // TIME_VARIABLE_ABUNDANCES
 
 };
 
