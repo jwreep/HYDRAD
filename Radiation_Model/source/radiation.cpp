@@ -568,20 +568,24 @@ return ( fne * fnH ) * result;
 }
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-double CRadiation::GetRadiation( double flog_10T, double fne, double fnH, double AF )
+double CRadiation::GetRadiation( double flog_10T, double fne, double fnH, double AF_L, double AF_H )
 {
 double fEmiss = 0.0;
 int i;
 
 // Find the required element
-for( i=0; i<NumElements; i++ )
+for( i=1; i<NumElements; i++ )
 {
     if( ppElements[i]->GetFIP() <= LOW_FIP_THRESHOLD )
     {
-        fEmiss += (AF * ppElements[i]->GetEmissivity( flog_10T, log10(fne) ) );
+        fEmiss += (AF_L * ppElements[i]->GetEmissivity( flog_10T, log10(fne) ) );
+    }
+    else if( (ppElements[i]->GetFIP() > LOW_FIP_THRESHOLD) && (pZ[i] != 1) )
+    {
+        fEmiss += (AF_H * ppElements[i]->GetEmissivity( flog_10T, log10(fne) ) );
     }
     else
-    {
+    {   // Emission from hydrogen is not modified by abundance factor
         fEmiss += ppElements[i]->GetEmissivity( flog_10T, log10(fne) );
     }
 }

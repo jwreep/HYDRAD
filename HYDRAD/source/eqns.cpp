@@ -281,12 +281,14 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
          // Set the initial abundance factors to photospheric for cells in the chromosphere
          if (CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE)
          {
-             CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+             CellProperties.AF_L[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+             CellProperties.AF_H[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
          // and set the initial abundance factors to coronal for cells above the chromosphere
          else
          {
-             CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+             CellProperties.AF_L[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+             CellProperties.AF_H[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
 #endif // TIME_VARIABLE_ABUNDANCES
     
@@ -319,12 +321,14 @@ double fBB_lu[6], fBB_ul[6], fBF[4], fFB[4], fColl_ex_lu[10], fColl_ex_ul[10], f
          // Set the initial abundance factors to photospheric for cells in the chromosphere
          if (CellProperties.T[ELECTRON] < OPTICALLY_THICK_TEMPERATURE)
          {
-             CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+             CellProperties.AF_L[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+             CellProperties.AF_H[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
          // and set the initial abundance factors to coronal for cells above the chromosphere
          else
          {
-             CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+             CellProperties.AF_L[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+             CellProperties.AF_H[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
          }
 #endif // TIME_VARIABLE_ABUNDANCES
 
@@ -1055,7 +1059,7 @@ int j;
     	CellProperties.T[HYDROGEN] = (4.830917874e15) * AVERAGE_PARTICLE_MASS * ( term1 - term2 );
 
         #ifdef TIME_VARIABLE_ABUNDANCES
-        if( CellProperties.AF[1] <= 0.0 ) 
+        if( CellProperties.AF_L[1] <= 0.0 ) 
         {   
             /* Initialize the abundance factor in cells at time zero, 
              * and anywhere that it somehow becomes less than zero 
@@ -1068,11 +1072,31 @@ int j;
             if( CellProperties.T[HYDROGEN] < 3.0E4 )
             #endif // OPTICALLY_THICK_RADIATION
             {
-                CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+                CellProperties.AF_L[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
             }
             else
             {
-                CellProperties.AF[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+                CellProperties.AF_L[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+            }
+        }
+        if( CellProperties.AF_H[1] <= 0.0 ) 
+        {   
+            /* Initialize the abundance factor in cells at time zero, 
+             * and anywhere that it somehow becomes less than zero 
+             * (i.e. catch non-physical values).  It should be strictly greater 
+             * than zero at all times and positions.
+             */
+            #ifdef OPTICALLY_THICK_RADIATION
+            if( CellProperties.T[HYDROGEN] < OPTICALLY_THICK_TEMPERATURE )
+            #else // OPTICALLY_THICK_RADIATION
+            if( CellProperties.T[HYDROGEN] < 3.0E4 )
+            #endif // OPTICALLY_THICK_RADIATION
+            {
+                CellProperties.AF_H[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+            }
+            else
+            {
+                CellProperties.AF_H[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
             }
         }
         #endif // TIME_VARIABLE_ABUNDANCES
@@ -1144,9 +1168,13 @@ int j;
                 
                  #ifdef TIME_VARIABLE_ABUNDANCES
                  fFIP = pRadiation->GetFIP( piA[i] );
-                 if ( fFIP < LOW_FIP_THRESHOLD && fFIP != 0.0 )
+                 if( fFIP <= LOW_FIP_THRESHOLD && fFIP != 0.0 )
                  {
-                     fElement *= CellProperties.AF[1];
+                     fElement *= CellProperties.AF_L[1];
+                 }
+                 if( fFIP > LOW_FIP_THRESHOLD && fFIP != 0.0 )
+                 {
+                     fElement *= CellProperties.AF_H[1];
                  }
                  #endif // TIME_VARIABLE_ABUNDANCES
 				fSum += fElement;
@@ -1170,9 +1198,13 @@ int j;
                 
                  #ifdef TIME_VARIABLE_ABUNDANCES
                  fFIP = pRadiation->GetFIP( piA[i] );
-                 if ( fFIP < LOW_FIP_THRESHOLD && fFIP != 0.0 )
+                 if( fFIP <= LOW_FIP_THRESHOLD && fFIP != 0.0 )
                  {
-                     fElement *= CellProperties.AF[1];
+                     fElement *= CellProperties.AF_L[1];
+                 }
+                 if( fFIP > LOW_FIP_THRESHOLD && fFIP != 0.0 )
+                 {
+                     fElement *= CellProperties.AF_H[1];
                  }
                  #endif // TIME_VARIABLE_ABUNDANCES
 

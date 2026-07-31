@@ -109,7 +109,7 @@ class CRadiation {
     double GetRadiation( int iZ, double flog_10T, double fne, double fnH, double *pni );
     double GetRadiation( double flog_10T, double fne, double fnH, double **ppni );
     #ifdef TIME_VARIABLE_ABUNDANCES
-    double GetRadiation( double flog_10T, double fne, double fnH, double **ppni, double AF );
+    double GetRadiation( double flog_10T, double fne, double fnH, double **ppni, double AF_L, double AF_H );
     #endif // TIME_VARIABLE_ABUNDANCES
 
     // Functions to calculate energy radiated based upon power-laws
