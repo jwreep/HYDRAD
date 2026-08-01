@@ -1620,17 +1620,6 @@ double T[3][SPECIES], gradT, n[SPECIES], P, v[2], gradv, Kappa_B, Fc_max;
 	double tau_IR;
 #endif // BEAM_HEATING
 
-#ifdef TIME_VARIABLE_ABUNDANCES
-    // Hard code the source terms for the moment.  Should be changed to an input config file.
-    double rho_inj = 2.0e-14; // ~ 10^10 cm^-3, from To et al 2024
-    double v_inj = 2.5e7;  // ~ 250 km/s, from To et al 2024
-    double massflux_inj = rho_inj * v_inj;  
-    double T_inj = 1e7;  // K, compare the current sheet in Warren et al 2018
-    double sigma_inj = 1.0e8;  // 1 Mm
-    double AF_inj = 4.0;  // Assuming coronal
-    double s_inj = Params.L / 2.0; // Apex
-#endif // TIME_VARIABLE_ABUNDANCES
-
 #ifdef USE_KINETIC_MODEL
 	CalculateKineticModel( iFirstStep );
 #endif // USE_KINETIC_MODEL
@@ -1792,16 +1781,17 @@ int j;
             #ifdef TIME_VARIABLE_ABUNDANCES
             // CALCULATE THE ABUNDANCE FACTOR
 	 
+                // low-FIP AF first:
 	        x[1] = FarLeftCellProperties.s[1];
 			x[2] = LeftCellProperties.s[1];
-			y[1] = FarLeftCellProperties.AF[1];
-			y[2] = LeftCellProperties.AF[1];
+			y[1] = FarLeftCellProperties.AF_L[1];
+			y[2] = LeftCellProperties.AF_L[1];
 			LinearFit( x, y, CellProperties.s[0], &Q1 );
 
 			x[1] = LeftCellProperties.s[1];
 			x[2] = CellProperties.s[1];
-			y[1] = LeftCellProperties.AF[1];
-			y[2] = CellProperties.AF[1];
+			y[1] = LeftCellProperties.AF_L[1];
+			y[2] = CellProperties.AF_L[1];
 			LinearFit( x, y, CellProperties.s[0], &Q2 );
 
 	        Q3 = y[1];
@@ -1810,21 +1800,55 @@ int j;
 			{
 		    	QT = max( Q1, Q2 );
 			    if( Q3 < QT )
-		    	    CellProperties.AF[0] = Q3;
+		    	    CellProperties.AF_L[0] = Q3;
 	    		else
-	        		CellProperties.AF[0] = QT;
+	        		CellProperties.AF_L[0] = QT;
 			}
 			else
 			{
 	    		QT = min( Q1, Q2 );
 		    	if( Q3 > QT )
-		        	CellProperties.AF[0] = Q3;
+		        	CellProperties.AF_L[0] = Q3;
 	    		else
-	        		CellProperties.AF[0] = QT;
+	        		CellProperties.AF_L[0] = QT;
 			}
 	        
-			LeftCellProperties.AF[2] = CellProperties.AF[0];
+			LeftCellProperties.AF_L[2] = CellProperties.AF_L[0];
            
+           
+                // high-FIP AF second:
+	        x[1] = FarLeftCellProperties.s[1];
+			x[2] = LeftCellProperties.s[1];
+			y[1] = FarLeftCellProperties.AF_H[1];
+			y[2] = LeftCellProperties.AF_H[1];
+			LinearFit( x, y, CellProperties.s[0], &Q1 );
+
+			x[1] = LeftCellProperties.s[1];
+			x[2] = CellProperties.s[1];
+			y[1] = LeftCellProperties.AF_H[1];
+			y[2] = CellProperties.AF_H[1];
+			LinearFit( x, y, CellProperties.s[0], &Q2 );
+
+	        Q3 = y[1];
+
+			if( y[2] <= y[1] )
+			{
+		    	QT = max( Q1, Q2 );
+			    if( Q3 < QT )
+		    	    CellProperties.AF_H[0] = Q3;
+	    		else
+	        		CellProperties.AF_H[0] = QT;
+			}
+			else
+			{
+	    		QT = min( Q1, Q2 );
+		    	if( Q3 > QT )
+		        	CellProperties.AF_H[0] = Q3;
+	    		else
+	        		CellProperties.AF_H[0] = QT;
+			}
+	        
+			LeftCellProperties.AF_H[2] = CellProperties.AF_H[0];
             #endif // TIME_VARIABLE_ABUNDANCES
 		
 			// CALCULATE THE MOMENTUM
@@ -1965,16 +1989,17 @@ int j;
             #ifdef TIME_VARIABLE_ABUNDANCES
             // CALCULATE THE ABUNDANCE FACTOR
 	        
+                // low-FIP AF first
 	        x[1] = CellProperties.s[1];
 			x[2] = RightCellProperties.s[1];
-			y[1] = CellProperties.AF[1];
-			y[2] = RightCellProperties.AF[1];
+			y[1] = CellProperties.AF_L[1];
+			y[2] = RightCellProperties.AF_L[1];
 			LinearFit( x, y, CellProperties.s[0], &Q1 );
 
 			x[1] = LeftCellProperties.s[1];
 			x[2] = CellProperties.s[1];
-			y[1] = LeftCellProperties.AF[1];
-			y[2] = CellProperties.AF[1];
+			y[1] = LeftCellProperties.AF_L[1];
+			y[2] = CellProperties.AF_L[1];
 			LinearFit( x, y, CellProperties.s[0], &Q2 );
 
 	        Q3 = y[2];
@@ -1984,20 +2009,55 @@ int j;
 			{
     	        QT = max( Q1, Q2 );
 	    		if( Q3 < QT )
-	        		CellProperties.AF[0] = Q3;
+	        		CellProperties.AF_L[0] = Q3;
 	    		else
-	        		CellProperties.AF[0] = QT;
+	        		CellProperties.AF_L[0] = QT;
 			}
 			else
 			{
 	    		QT = min( Q1, Q2 );
 		    	if( Q3 > QT )
-		        	CellProperties.AF[0] = Q3;
+		        	CellProperties.AF_L[0] = Q3;
 	    		else
-	        		CellProperties.AF[0] = QT;
+	        		CellProperties.AF_L[0] = QT;
 			}
 
-			LeftCellProperties.AF[2] = CellProperties.AF[0];
+			LeftCellProperties.AF_L[2] = CellProperties.AF_L[0];
+
+                // high-FIP AF next
+	        x[1] = CellProperties.s[1];
+			x[2] = RightCellProperties.s[1];
+			y[1] = CellProperties.AF_H[1];
+			y[2] = RightCellProperties.AF_H[1];
+			LinearFit( x, y, CellProperties.s[0], &Q1 );
+
+			x[1] = LeftCellProperties.s[1];
+			x[2] = CellProperties.s[1];
+			y[1] = LeftCellProperties.AF_H[1];
+			y[2] = CellProperties.AF_H[1];
+			LinearFit( x, y, CellProperties.s[0], &Q2 );
+
+	        Q3 = y[2];
+
+			// Note: The flow is in the opposite direction and so the conditional is switched
+			if( y[1] <= y[2] )
+			{
+    	        QT = max( Q1, Q2 );
+	    		if( Q3 < QT )
+	        		CellProperties.AF_H[0] = Q3;
+	    		else
+	        		CellProperties.AF_H[0] = QT;
+			}
+			else
+			{
+	    		QT = min( Q1, Q2 );
+		    	if( Q3 > QT )
+		        	CellProperties.AF_H[0] = Q3;
+	    		else
+	        		CellProperties.AF_H[0] = QT;
+			}
+
+			LeftCellProperties.AF_H[2] = CellProperties.AF_H[0];
             
             #endif // TIME_VARIABLE_ABUNDANCES
         
@@ -2515,13 +2575,20 @@ int j;
 	    CellProperties.drhobydt = CellProperties.rho_term[0];
         
 #ifdef TIME_VARIABLE_ABUNDANCES
-        LowerValue = CellProperties.AF[0];
-        UpperValue = CellProperties.AF[2];
+        LowerValue = CellProperties.AF_L[0];
+        UpperValue = CellProperties.AF_L[2];
 
-    // Calculate the time derivative of the abundance factor
+    // Calculate the time derivative of the low-FIP abundance factor
         // Does not depend on the cross-sectional area!
-    CellProperties.dAFbydt = - CellProperties.v[1] * ( UpperValue - LowerValue ) / CellProperties.cell_width;
+    CellProperties.dAFLbydt = - CellProperties.v[1] * ( UpperValue - LowerValue ) / CellProperties.cell_width;
     
+        LowerValue = CellProperties.AF_H[0];
+        UpperValue = CellProperties.AF_H[2];
+
+    // Calculate the time derivative of the high-FIP abundance factor
+        // Does not depend on the cross-sectional area!
+    CellProperties.dAFHbydt = - CellProperties.v[1] * ( UpperValue - LowerValue ) / CellProperties.cell_width;
+
 // *****************************************************************************
 // *    SOURCE TERM                                                            *
 // *****************************************************************************
@@ -2771,7 +2838,7 @@ int j;
 			// If USE_POWER_LAW_RADIATIVE_LOSSES hasn't been defined then the default must be to use the NON_EQUILIBRIUM_RADIATION method for calculating the radiative losses, because
 			// NON_EQUILIBRIUM_RADIATION is *ALWAYS* defined when DECOUPLE_IONISATION_STATE_SOLVER is defined
             #ifdef TIME_VARIABLE_ABUNDANCES
-                CellProperties.TE_KE_term[5][ELECTRON] -= term1 * ( pRadiation->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN], CellProperties.AF[1] ) + pRadiation2->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN], CellProperties.AF[1] ) + pRadiation2->GetFreeFreeRad( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN] ) );
+                CellProperties.TE_KE_term[5][ELECTRON] -= term1 * ( pRadiation->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN], CellProperties.AF_L[1], CellProperties.AF_H[1] ) + pRadiation2->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN], CellProperties.AF_L[1], CellProperties.AF_H[1] ) + pRadiation2->GetFreeFreeRad( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN] ) );
             #else // TIME_VARIABLE_ABUNDANCES
                 CellProperties.TE_KE_term[5][ELECTRON] -= term1 * ( pRadiation->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN] ) + pRadiation2->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN] ) + pRadiation2->GetFreeFreeRad( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN] ) );
             #endif // TIME_VARIABLE_ABUNDANCES
@@ -2780,7 +2847,7 @@ int j;
 	#ifdef NON_EQUILIBRIUM_RADIATION
        			ppni2 = CellProperties.pIonFrac->ppGetIonFrac();
             #ifdef TIME_VARIABLE_ABUNDANCES
-                CellProperties.TE_KE_term[5][ELECTRON] -= term1 * ( pRadiation->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN], ppni2, CellProperties.AF[1] ) + pRadiation2->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN], CellProperties.AF[1] ) + pRadiation2->GetFreeFreeRad( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN] ) );
+                CellProperties.TE_KE_term[5][ELECTRON] -= term1 * ( pRadiation->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN], ppni2, CellProperties.AF_L[1], CellProperties.AF_H[1] ) + pRadiation2->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN], CellProperties.AF_L[1], CellProperties.AF_H[1] ) + pRadiation2->GetFreeFreeRad( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN] ) );
             #else // TIME_VARIABLE_ABUNDANCES
                 CellProperties.TE_KE_term[5][ELECTRON] -= term1 * ( pRadiation->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN], ppni2 ) + pRadiation2->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN] ) + pRadiation2->GetFreeFreeRad( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN] ) );
             #endif // TIME_VARIABLE_ABUNDANCES
@@ -2789,7 +2856,7 @@ int j;
 				CellProperties.TE_KE_term[5][ELECTRON] -= term1 * pRadiation2->GetPowerLawRad( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN] );
 		#else // USE_POWER_LAW_RADIATIVE_LOSSES
             #ifdef TIME_VARIABLE_ABUNDANCES
-                CellProperties.TE_KE_term[5][ELECTRON] -= term1 * ( pRadiation2->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN], CellProperties.AF[1] ) + pRadiation2->GetFreeFreeRad( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN] ) );
+                CellProperties.TE_KE_term[5][ELECTRON] -= term1 * ( pRadiation2->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN], CellProperties.AF_L[1], CellProperties.AF_H[1] ) + pRadiation2->GetFreeFreeRad( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN] ) );
             #else // TIME_VARIABLE_ABUNDANCES
                 CellProperties.TE_KE_term[5][ELECTRON] -= term1 * ( pRadiation2->GetRadiation( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN] ) + pRadiation2->GetFreeFreeRad( log10( CellProperties.T[ELECTRON] ), CellProperties.n[ELECTRON], CellProperties.n[HYDROGEN] ) );
             #endif // TIME_VARIABLE_ABUNDANCES
@@ -3032,7 +3099,8 @@ pActiveCell->GetCellProperties( &CellProperties );
 
 #ifdef TIME_VARIABLE_ABUNDANCES
     // Update the abundance factor here!
-    pNewCellProperties->AF[1] = CellProperties.AF[1] +  ( delta_t * CellProperties.dAFbydt );
+    pNewCellProperties->AF_L[1] = CellProperties.AF_L[1] +  ( delta_t * CellProperties.dAFLbydt );
+    pNewCellProperties->AF_H[1] = CellProperties.AF_H[1] +  ( delta_t * CellProperties.dAFHbydt );
 #endif // TIME_VARIABLE_ABUNDANCES
 }
 
@@ -3074,7 +3142,8 @@ int j;
 
 #ifdef TIME_VARIABLE_ABUNDANCES
     // Update the abundance factor here!
-    pCellProperties->AF[1] = BottomCellProperties.AF[1] +  ( delta_t * pCellProperties->dAFbydt );
+    pCellProperties->AF_L[1] = BottomCellProperties.AF_L[1] +  ( delta_t * pCellProperties->dAFLbydt );
+    pCellProperties->AF_H[1] = BottomCellProperties.AF_H[1] +  ( delta_t * pCellProperties->dAFHbydt );
 #endif // TIME_VARIABLE_ABUNDANCES
 }
 

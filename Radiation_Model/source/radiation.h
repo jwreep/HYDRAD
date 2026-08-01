@@ -97,7 +97,7 @@ class CRadiation {
     double GetRadiation( int iZ, double flog_10T, double fne, double fnH );
     double GetRadiation( double flog_10T, double fne, double fnH );
     #ifdef TIME_VARIABLE_ABUNDANCES
-    double GetRadiation( double flog_10T, double fne, double fnH, double AF );
+    double GetRadiation( double flog_10T, double fne, double fnH, double AF_L, double AF_H );
     #endif // TIME_VARIABLE_ABUNDANCES
 
     // Functions to calculate the rate of change with respect to time of the fractional populations of the ions and the characteristic time-scale

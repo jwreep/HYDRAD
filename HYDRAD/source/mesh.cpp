@@ -367,7 +367,8 @@ do {
 #endif // OPTICALLY_THICK_RADIATION
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-                 NewCellProperties[0].AF[1] = ( CellProperties.AF[1] + RightCellProperties.AF[1] ) / 2.0;
+                 NewCellProperties[0].AF_L[1] = ( CellProperties.AF_L[1] + RightCellProperties.AF_L[1] ) / 2.0;
+                 NewCellProperties[0].AF_H[1] = ( CellProperties.AF_H[1] + RightCellProperties.AF_H[1] ) / 2.0;
 #endif // TIME_VARIABLE_ABUNDANCES
 
 				pNewCell[0] = new CAdaptiveMeshCell( &(NewCellProperties[0]) );
@@ -622,18 +623,32 @@ do {
 #endif // OPTICALLY_THICK_RADIATION
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-                           y[1] = FarLeftCellProperties.AF[1];
-						y[2] = LeftCellProperties.AF[1];
-						y[3] = CellProperties.AF[1];
-						y[4] = RightCellProperties.AF[1];
-						y[5] = FarRightCellProperties.AF[1];
+                           y[1] = FarLeftCellProperties.AF_L[1];
+						y[2] = LeftCellProperties.AF_L[1];
+						y[3] = CellProperties.AF_L[1];
+						y[4] = RightCellProperties.AF_L[1];
+						y[5] = FarRightCellProperties.AF_L[1];
 #ifdef LINEAR_RESTRICTION
-                        LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]) );
-                        LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]) );
+                        LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_L[1]) );
+                        LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_L[1]) );
 #else
-                        FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]), &error );
-                        FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]), &error );
+                        FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF_L[1]), &error );
+                        FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_L[1]), &error );
 #endif // LINEAR_RESTRICTION
+
+                          y[1] = FarLeftCellProperties.AF_H[1];
+						y[2] = LeftCellProperties.AF_H[1];
+						y[3] = CellProperties.AF_H[1];
+						y[4] = RightCellProperties.AF_H[1];
+						y[5] = FarRightCellProperties.AF_H[1];
+#ifdef LINEAR_RESTRICTION
+                        LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_H[1]) );
+                        LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_H[1]) );
+#else
+                        FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF_H[1]), &error );
+                        FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_H[1]), &error );
+#endif // LINEAR_RESTRICTION
+
 
 #endif // TIME_VARIABLE_ABUNDANCES
 		    		}
@@ -719,17 +734,29 @@ do {
 #endif // OPTICALLY_THICK_RADIATION
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-						y[2] = LeftCellProperties.AF[1];
-						y[3] = CellProperties.AF[1];
-						y[4] = RightCellProperties.AF[1];
-						y[5] = FarRightCellProperties.AF[1];
+						y[2] = LeftCellProperties.AF_L[1];
+						y[3] = CellProperties.AF_L[1];
+						y[4] = RightCellProperties.AF_L[1];
+						y[5] = FarRightCellProperties.AF_L[1];
 #ifdef LINEAR_RESTRICTION
-						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]) );
-						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]) );
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_L[1]) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_L[1]) );
 #else
-						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]), &error );
-						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_L[1]), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_L[1]), &error );
 #endif // LINEAR_RESTRICTION
+						y[2] = LeftCellProperties.AF_H[1];
+						y[3] = CellProperties.AF_H[1];
+						y[4] = RightCellProperties.AF_H[1];
+						y[5] = FarRightCellProperties.AF_H[1];
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_H[1]) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_H[1]) );
+#else
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_H[1]), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_H[1]), &error );
+#endif // LINEAR_RESTRICTION
+
 #endif // TIME_VARIABLE_ABUNDANCES
                     }
                     else if( !pFarRightCell )
@@ -814,17 +841,29 @@ do {
 #endif // OPTICALLY_THICK_RADIATION
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-						y[1] = FarLeftCellProperties.AF[1];
-						y[2] = LeftCellProperties.AF[1];
-						y[3] = CellProperties.AF[1];
-						y[4] = RightCellProperties.AF[1];
+						y[1] = FarLeftCellProperties.AF_L[1];
+						y[2] = LeftCellProperties.AF_L[1];
+						y[3] = CellProperties.AF_L[1];
+						y[4] = RightCellProperties.AF_L[1];
 #ifdef LINEAR_RESTRICTION
-						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]) );
-						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]) );
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_L[1]) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_L[1]) );
 #else
-						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]), &error );
-						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]), &error );
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF_L[1]), &error );
+						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF_L[1]), &error );
 #endif // LINEAR_RESTRICTION
+						y[1] = FarLeftCellProperties.AF_H[1];
+						y[2] = LeftCellProperties.AF_H[1];
+						y[3] = CellProperties.AF_H[1];
+						y[4] = RightCellProperties.AF_H[1];
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_H[1]) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_H[1]) );
+#else
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF_H[1]), &error );
+						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF_H[1]), &error );
+#endif // LINEAR_RESTRICTION
+
 #endif // TIME_VARIABLE_ABUNDANCES
                     }
 				}
@@ -883,10 +922,15 @@ do {
 #endif // OPTICALLY_THICK_RADIATION
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-                    y[1] = CellProperties.AF[1];
-                    y[2] = RightCellProperties.AF[1];
-                    LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]) );
-                    LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]) );
+                    y[1] = CellProperties.AF_L[1];
+                    y[2] = RightCellProperties.AF_L[1];
+                    LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF_L[1]) );
+                    LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF_L[1]) );
+
+                    y[1] = CellProperties.AF_H[1];
+                    y[2] = RightCellProperties.AF_H[1];
+                    LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF_H[1]) );
+                    LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF_H[1]) );
 
 #endif // TIME_VARIABLE_ABUNDANCES
 				}
@@ -1122,18 +1166,31 @@ do {
 #endif // OPTICALLY_THICK_RADIATION
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-						y[1] = FarLeftCellProperties.AF[1];
-						y[2] = LeftCellProperties.AF[1];
-						y[3] = CellProperties.AF[1];
-						y[4] = RightCellProperties.AF[1];
-						y[5] = FarRightCellProperties.AF[1];
+						y[1] = FarLeftCellProperties.AF_L[1];
+						y[2] = LeftCellProperties.AF_L[1];
+						y[3] = CellProperties.AF_L[1];
+						y[4] = RightCellProperties.AF_L[1];
+						y[5] = FarRightCellProperties.AF_L[1];
 #ifdef LINEAR_RESTRICTION
-						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]) );
-						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]) );
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_L[1]) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_L[1]) );
 #else
-						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]), &error );
-						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]), &error );
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF_L[1]), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_L[1]), &error );
 #endif // LINEAR_RESTRICTION
+						y[1] = FarLeftCellProperties.AF_H[1];
+						y[2] = LeftCellProperties.AF_H[1];
+						y[3] = CellProperties.AF_H[1];
+						y[4] = RightCellProperties.AF_H[1];
+						y[5] = FarRightCellProperties.AF_H[1];
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_H[1]) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_H[1]) );
+#else
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF_H[1]), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_H[1]), &error );
+#endif // LINEAR_RESTRICTION
+
 #endif // TIME_VARIABLE_ABUNDANCES
                     }
                     else if( !pFarLeftCell )
@@ -1218,17 +1275,29 @@ do {
 #endif // OPTICALLY_THICK_RADIATION
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-						y[2] = LeftCellProperties.AF[1];
-						y[3] = CellProperties.AF[1];
-						y[4] = RightCellProperties.AF[1];
-						y[5] = FarRightCellProperties.AF[1];
+						y[2] = LeftCellProperties.AF_L[1];
+						y[3] = CellProperties.AF_L[1];
+						y[4] = RightCellProperties.AF_L[1];
+						y[5] = FarRightCellProperties.AF_L[1];
 #ifdef LINEAR_RESTRICTION
-						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]) );
-						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]) );
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_L[1]) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_L[1]) );
 #else
-						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]), &error );
-						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_L[1]), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_L[1]), &error );
 #endif // LINEAR_RESTRICTION
+						y[2] = LeftCellProperties.AF_H[1];
+						y[3] = CellProperties.AF_H[1];
+						y[4] = RightCellProperties.AF_H[1];
+						y[5] = FarRightCellProperties.AF_H[1];
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_H[1]) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_H[1]) );
+#else
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_H[1]), &error );
+						FitPolynomial4( &(x[1]), &(y[1]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_H[1]), &error );
+#endif // LINEAR_RESTRICTION
+
 #endif // TIME_VARIABLE_ABUNDANCES
                     }
                     else if( !pFarRightCell )
@@ -1314,17 +1383,29 @@ do {
 #endif // OPTICALLY_THICK_RADIATION
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-						y[1] = FarLeftCellProperties.AF[1];
-						y[2] = LeftCellProperties.AF[1];
-						y[3] = CellProperties.AF[1];
-						y[4] = RightCellProperties.AF[1];
+						y[1] = FarLeftCellProperties.AF_L[1];
+						y[2] = LeftCellProperties.AF_L[1];
+						y[3] = CellProperties.AF_L[1];
+						y[4] = RightCellProperties.AF_L[1];
 #ifdef LINEAR_RESTRICTION
-						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]) );
-						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]) );
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_L[1]) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_L[1]) );
 #else
-						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]), &error );
-						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]), &error );
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF_L[1]), &error );
+						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF_L[1]), &error );
 #endif // LINEAR_RESTRICTION
+						y[1] = FarLeftCellProperties.AF_H[1];
+						y[2] = LeftCellProperties.AF_H[1];
+						y[3] = CellProperties.AF_H[1];
+						y[4] = RightCellProperties.AF_H[1];
+#ifdef LINEAR_RESTRICTION
+						LinearFit( &(x[1]), &(y[1]), NewCellProperties[0].s[1], &(NewCellProperties[0].AF_H[1]) );
+						LinearFit( &(x[2]), &(y[2]), NewCellProperties[1].s[1], &(NewCellProperties[1].AF_H[1]) );
+#else
+						FitPolynomial4( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF_H[1]), &error );
+						FitPolynomial4( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF_H[1]), &error );
+#endif // LINEAR_RESTRICTION
+
 #endif // TIME_VARIABLE_ABUNDANCES
                     }
 				}
@@ -1383,10 +1464,16 @@ do {
 #endif // OPTICALLY_THICK_RADIATION
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-                    y[1] = LeftCellProperties.AF[1];
-                    y[2] = CellProperties.AF[1];
-                    LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF[1]) );
-                    LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF[1]) );
+                    y[1] = LeftCellProperties.AF_L[1];
+                    y[2] = CellProperties.AF_L[1];
+                    LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF_L[1]) );
+                    LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF_L[1]) );
+                    
+                    y[1] = LeftCellProperties.AF_H[1];
+                    y[2] = CellProperties.AF_H[1];
+                    LinearFit( x, y, NewCellProperties[0].s[1], &(NewCellProperties[0].AF_H[1]) );
+                    LinearFit( x, y, NewCellProperties[1].s[1], &(NewCellProperties[1].AF_H[1]) );
+
 #endif // TIME_VARIABLE_ABUNDANCES
 				}
 
@@ -1551,8 +1638,11 @@ void CAdaptiveMesh::EnforceBoundaryConditions( void )
 #endif // OPTICALLY_THICK_RADIATION
 
 #ifdef TIME_VARIABLE_ABUNDANCES
-	GhostCellProperties[0].AF[1] = CellProperties[1].AF[1];
-	GhostCellProperties[1].AF[1] = CellProperties[0].AF[1];
+	GhostCellProperties[0].AF_L[1] = CellProperties[1].AF_L[1];
+	GhostCellProperties[1].AF_L[1] = CellProperties[0].AF_L[1];
+    
+    GhostCellProperties[0].AF_H[1] = CellProperties[1].AF_H[1];
+	GhostCellProperties[1].AF_H[1] = CellProperties[0].AF_H[1];
 #endif // TIME_VARIABLE_ABUNDANCES
 
 #else // FORCE_SYMMETRY
@@ -1620,8 +1710,12 @@ void CAdaptiveMesh::EnforceBoundaryConditions( void )
 
 #ifdef TIME_VARIABLE_ABUNDANCES
     // Assume that the ghost cells have coronal abundance factors
-    GhostCellProperties[0].AF[1] = CORONAL_ABUNDANCE_FACTOR;
-    GhostCellProperties[1].AF[1] = CORONAL_ABUNDANCE_FACTOR;
+    GhostCellProperties[0].AF_L[1] = CORONAL_ABUNDANCE_FACTOR;
+    GhostCellProperties[1].AF_L[1] = CORONAL_ABUNDANCE_FACTOR;
+
+    GhostCellProperties[0].AF_H[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+    GhostCellProperties[1].AF_H[1] = PHOTOSPHERIC_ABUNDANCE_FACTOR;
+
 #endif // TIME_VARIABLE_ABUNDANCES
 
 #endif // FORCE_SYMMETRY
@@ -2114,7 +2208,8 @@ while( pNextActiveCell )
 #ifdef TIME_VARIABLE_ABUNDANCES
 #ifdef WRITE_FILE_ABUNDANCE_FACTOR
     fprintf( pAbundFile, "%.8e", CellProperties.s[1] );
-    fprintf( pAbundFile, "\t%.8e", CellProperties.AF[1] );
+    fprintf( pAbundFile, "\t%.8e", CellProperties.AF_L[1] );
+    fprintf( pAbundFile, "\t%.8e", CellProperties.AF_H[1] );
     fprintf( pAbundFile, "\n" );
 #endif // WRITE_FILE_ABUNDANCE_FACTOR
 #endif // TIME_VARIABLE_ABUNDANCES
