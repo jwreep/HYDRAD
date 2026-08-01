@@ -2596,7 +2596,8 @@ int j;
     // We directly inject mass of arbitrary abundance factor as a source term to both continuity equations
     //  (This is done in the heating module because it also injects internal energy)
     CellProperties.drhobydt += pHeat->CalculateMassInjection( current_time, CellProperties.s[1] );
-    CellProperties.dAFbydt += pHeat->CalculateAFInjection( current_time, CellProperties.s[1], CellProperties.rho[1], CellProperties.AF[1] );
+    CellProperties.dAFLbydt += pHeat->CalculateAFLInjection( current_time, CellProperties.s[1], CellProperties.rho[1], CellProperties.AF_L[1] );
+    CellProperties.dAFHbydt += pHeat->CalculateAFHInjection( current_time, CellProperties.s[1], CellProperties.rho[1], CellProperties.AF_H[1] );
         
 #endif // TIME_VARIABLE_ABUNDANCES
 

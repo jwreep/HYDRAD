@@ -246,7 +246,8 @@ void CHeat::GetInjectionHeatingData()
     // Get the data for direct injection
     ReadDouble( pConfigFile, &TimeInj );
     ReadDouble( pConfigFile, &RhoInj );
-    ReadDouble( pConfigFile, &AFInj );
+    ReadDouble( pConfigFile, &AFLInj );
+    ReadDouble( pConfigFile, &AFHInj );
     ReadDouble( pConfigFile, &VelInj );
     ReadDouble( pConfigFile, &TempInj );
     ReadDouble( pConfigFile, &LocationInj );
@@ -575,11 +576,24 @@ double CHeat::CalculateMassInjection( double t, double s )
     }
 }
 
-double CHeat::CalculateAFInjection( double t, double s, double rho, double AF )
+double CHeat::CalculateAFLInjection( double t, double s, double rho, double AF )
 {
     if( t <= TimeInj )
     {
-        return ( ( RhoInj * VelInj * (AFInj - AF) ) / (2.5066282746310002 * WidthInj * rho)
+        return ( ( RhoInj * VelInj * (AFLInj - AF) ) / (2.5066282746310002 * WidthInj * rho)
+                    * exp(- pow(s - LocationInj, 2.0) / (2.0 * WidthInj * WidthInj) ) );
+    }
+    else
+    {
+        return 0.0;
+    }
+}
+
+double CHeat::CalculateAFHInjection( double t, double s, double rho, double AF )
+{
+    if( t <= TimeInj )
+    {
+        return ( ( RhoInj * VelInj * (AFHInj - AF) ) / (2.5066282746310002 * WidthInj * rho)
                     * exp(- pow(s - LocationInj, 2.0) / (2.0 * WidthInj * WidthInj) ) );
     }
     else
